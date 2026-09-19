@@ -10,6 +10,7 @@ import mysql.connector
 from thefuzz import fuzz
 from flask import Flask, render_template, request, redirect, url_for
 from dotenv import load_dotenv
+import unicodedata
 
 load_dotenv() # Carga las variables desde el archivo .env
 
@@ -90,7 +91,11 @@ def init_db():
 def clean_text(text):
     if not text: return ""
     text = text.lower()
+    # Eliminar acentos y caracteres especiales latinos correctamente (í -> i, ñ -> n)
+    text = ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+    # Eliminar paréntesis y su contenido
     text = re.sub(r'[\(\[].*?[\)\]]', '', text)
+    # Eliminar cualquier cosa que no sea alfanumérica
     text = re.sub(r'[^a-z0-9\s]', ' ', text)
     return " ".join(text.split())
 
