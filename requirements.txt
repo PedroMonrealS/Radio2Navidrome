@@ -1,0 +1,6 @@
+requests
+mysql-connector-python
+thefuzz
+python-Levenshtein
+Flask
+python-dotenv

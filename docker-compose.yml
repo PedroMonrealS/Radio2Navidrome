@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  radio-monitor:
+    build: .
+    container_name: radio_monitor
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Madrid # Zona horaria
