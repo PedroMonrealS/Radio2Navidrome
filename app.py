@@ -200,6 +200,34 @@ def check_db_status(title, artist):
     except Exception as e:
         return None
 
+def sync_aceptadas_to_libreria():
+    playlist_id = get_target_playlist_id()
+    playlist_tracks = get_playlist_track_ids(playlist_id) if playlist_id else set()
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id, title, artist, preview_url FROM canciones_descubiertas WHERE estado = 'aceptada'")
+    for row in cursor.fetchall():
+        in_nav, nav_id = search_in_navidrome(row['title'], row['artist'])
+        if in_nav:
+            print(f"🔄 Canción descargada detectada: {row['title']}. Añadiendo a playlist...")
+            
+            en_play = nav_id in playlist_tracks
+            if playlist_id and not en_play:
+                success = add_song_to_playlist(playlist_id, nav_id)
+                star_song_in_navidrome(nav_id)
+                if success:
+                    en_play = True
+                    playlist_tracks.add(nav_id)
+            
+            cursor.execute("""
+                INSERT IGNORE INTO canciones_libreria (title, artist, navidrome_id, en_playlist, preview_url) 
+                VALUES (%s, %s, %s, %s, %s)
+            """, (row['title'], row['artist'], nav_id, en_play, row['preview_url']))
+            cursor.execute("DELETE FROM canciones_descubiertas WHERE id = %s", (row['id'],))
+    conn.commit()
+    conn.close()
+
 def radio_monitor_loop():
     print("Iniciando monitor de radio en segundo plano...")
     sync_counter = 0
@@ -259,32 +287,7 @@ def radio_monitor_loop():
             # Sincronización cruzada de Aceptadas -> Libreria
             sync_counter += 1
             if sync_counter >= 15: # 15 ciclos * 2 min = 30 minutos
-                playlist_id = get_target_playlist_id()
-                playlist_tracks = get_playlist_track_ids(playlist_id) if playlist_id else set()
-                
-                conn = get_db_connection()
-                cursor = conn.cursor(dictionary=True)
-                cursor.execute("SELECT id, title, artist, preview_url FROM canciones_descubiertas WHERE estado = 'aceptada'")
-                for row in cursor.fetchall():
-                    in_nav, nav_id = search_in_navidrome(row['title'], row['artist'])
-                    if in_nav:
-                        print(f"🔄 Canción descargada detectada: {row['title']}. Añadiendo a playlist...")
-                        
-                        en_play = nav_id in playlist_tracks
-                        if playlist_id and not en_play:
-                            success = add_song_to_playlist(playlist_id, nav_id)
-                            star_song_in_navidrome(nav_id)
-                            if success:
-                                en_play = True
-                                playlist_tracks.add(nav_id)
-                        
-                        cursor.execute("""
-                            INSERT IGNORE INTO canciones_libreria (title, artist, navidrome_id, en_playlist, preview_url) 
-                            VALUES (%s, %s, %s, %s, %s)
-                        """, (row['title'], row['artist'], nav_id, en_play, row['preview_url']))
-                        cursor.execute("DELETE FROM canciones_descubiertas WHERE id = %s", (row['id'],))
-                conn.commit()
-                conn.close()
+                sync_aceptadas_to_libreria()
                 sync_counter = 0
 
         except Exception as e:
@@ -312,6 +315,12 @@ def index():
     
     conn.close()
     return render_template('index.html', aceptadas=aceptadas, pendientes=pendientes, rechazadas=rechazadas, sin_playlist=sin_playlist)
+
+@app.route('/force_sync')
+def force_sync():
+    # Llama a la misma función que usa el proceso en segundo plano
+    sync_aceptadas_to_libreria()
+    return redirect(url_for('index'))
 
 @app.route('/add_manual', methods=['POST'])
 def add_manual():

@@ -34,7 +34,7 @@
     <div class="container">
         <!-- PENDIENTES -->
         <div class="card">
-            <h2>⏳ Pendientes</h2>
+            <h2>⏳ Pendientes ({{ pendientes|length }})</h2>
             <ul>
                 {% for song in pendientes %}
                 <li>
@@ -60,7 +60,10 @@
 
         <!-- ACEPTADAS -->
         <div class="card">
-            <h2>✅ A Descargar</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007BFF; padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="border: none; padding: 0; margin: 0;">✅ A Descargar ({{ aceptadas|length }})</h2>
+                <a href="/force_sync" class="btn btn-info" style="font-size: 0.8em;">🔄 Sincronizar</a>
+            </div>
             <form class="add-form" action="/add_manual" method="POST">
                 <input type="text" name="artist" placeholder="Artista" required>
                 <input type="text" name="title" placeholder="Título" required>
@@ -90,7 +93,7 @@
 
         <!-- EN LIBRERÍA PERO SIN PLAYLIST -->
         <div class="card">
-            <h2>🎶 En Librería (Falta Playlist)</h2>
+            <h2>🎶 Falta Playlist ({{ sin_playlist|length }})</h2>
             <p style="font-size: 0.85em; color: #666;">Canciones descargadas pero no están en "Canciones que te gustan"</p>
             <ul>
                 {% for song in sin_playlist %}
@@ -116,7 +119,7 @@
 
         <!-- RECHAZADAS -->
         <div class="card">
-            <h2>❌ Rechazadas</h2>
+            <h2>❌ Rechazadas ({{ rechazadas|length }})</h2>
             <ul>
                 {% for song in rechazadas %}
                 <li>
