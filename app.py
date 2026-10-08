@@ -290,10 +290,11 @@ def radio_monitor_loop():
                     conn.commit()
                     conn.close()
             
-            # Sincronización cruzada de Aceptadas -> Libreria
+            # Sincronización cruzada de Aceptadas -> Libreria y Faltantes
             sync_counter += 1
             if sync_counter >= 15: # 15 ciclos * 2 min = 30 minutos
                 sync_aceptadas_to_libreria()
+                sync_playlist_faltantes() # NUEVO: Chequeo automático en segundo plano
                 sync_counter = 0
 
         except Exception as e:
@@ -350,11 +351,7 @@ def index():
                            total_pages=total_pages,
                            counts={'pendientes': count_pendientes, 'descargar': count_aceptadas, 'playlist': count_sin_playlist})
 
-@app.route('/force_sync')
-def force_sync():
-    sync_aceptadas_to_libreria()
-    
-    # También comprobar las que faltan por si Navidrome ya las tiene
+def sync_playlist_faltantes():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -373,14 +370,17 @@ def force_sync():
             
             if nav_id and playlist_id:
                 if nav_id in playlist_tracks:
-                    # Ya está en la playlist, la marcamos como completada
                     cursor.execute("UPDATE canciones_libreria SET en_playlist = TRUE WHERE id = %s", (row['id'],))
                     
         conn.commit()
         conn.close()
     except Exception as e:
         print(f"Error sincronizando faltantes: {e}")
-        
+
+@app.route('/force_sync')
+def force_sync():
+    sync_aceptadas_to_libreria()
+    sync_playlist_faltantes()
     return redirect(url_for('index', tab=request.args.get('tab', 'descargar')))
 
 @app.route('/add_manual', methods=['POST'])
