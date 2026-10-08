@@ -353,7 +353,35 @@ def index():
 @app.route('/force_sync')
 def force_sync():
     sync_aceptadas_to_libreria()
-    return redirect(url_for('index', tab='descargar'))
+    
+    # También comprobar las que faltan por si Navidrome ya las tiene
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, title, artist, navidrome_id FROM canciones_libreria WHERE en_playlist = FALSE AND ignorar_playlist = FALSE")
+        faltan = cursor.fetchall()
+        
+        playlist_id = get_target_playlist_id()
+        playlist_tracks = get_playlist_track_ids(playlist_id) if playlist_id else set()
+        
+        for row in faltan:
+            nav_id = row['navidrome_id']
+            if not nav_id:
+                in_nav, nav_id = search_in_navidrome(row['title'], row['artist'])
+                if nav_id:
+                    cursor.execute("UPDATE canciones_libreria SET navidrome_id = %s WHERE id = %s", (nav_id, row['id']))
+            
+            if nav_id and playlist_id:
+                if nav_id in playlist_tracks:
+                    # Ya está en la playlist, la marcamos como completada
+                    cursor.execute("UPDATE canciones_libreria SET en_playlist = TRUE WHERE id = %s", (row['id'],))
+                    
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error sincronizando faltantes: {e}")
+        
+    return redirect(url_for('index', tab=request.args.get('tab', 'descargar')))
 
 @app.route('/add_manual', methods=['POST'])
 def add_manual():
@@ -388,9 +416,12 @@ def change_status(song_id, status):
     return redirect(url_for('index', tab=request.args.get('tab', 'pendientes')))
 
 def request_lidarr_song(artist, title):
+    if not LIDARR_URL:
+        return False, "Error: La URL de Lidarr no está configurada en .env o el programa no se ha reiniciado."
     headers = {"X-Api-Key": LIDARR_API}
+    proxies = {"http": None, "https": None}
     try:
-        res = requests.get(f"{LIDARR_URL}/api/v1/artist/lookup", params={"term": artist}, headers=headers, timeout=10)
+        res = requests.get(f"{LIDARR_URL}/api/v1/artist/lookup", params={"term": artist}, headers=headers, proxies=proxies, timeout=30)
         if res.status_code != 200 or not res.json():
             return False, "Artista no encontrado en Lidarr/MusicBrainz."
         
@@ -398,9 +429,9 @@ def request_lidarr_song(artist, title):
         artist_id = best_artist.get("id")
         
         if not artist_id:
-            roots = requests.get(f"{LIDARR_URL}/api/v1/rootfolder", headers=headers).json()
-            q_profiles = requests.get(f"{LIDARR_URL}/api/v1/qualityprofile", headers=headers).json()
-            m_profiles = requests.get(f"{LIDARR_URL}/api/v1/metadataprofile", headers=headers).json()
+            roots = requests.get(f"{LIDARR_URL}/api/v1/rootfolder", headers=headers, proxies=proxies, timeout=30).json()
+            q_profiles = requests.get(f"{LIDARR_URL}/api/v1/qualityprofile", headers=headers, proxies=proxies, timeout=30).json()
+            m_profiles = requests.get(f"{LIDARR_URL}/api/v1/metadataprofile", headers=headers, proxies=proxies, timeout=30).json()
             
             if not roots or not q_profiles or not m_profiles:
                 return False, "Faltan perfiles (Root/Quality/Metadata) en Lidarr."
@@ -412,13 +443,13 @@ def request_lidarr_song(artist, title):
             payload["monitored"] = True
             payload["addOptions"] = {"monitor": "none"}
             
-            add_res = requests.post(f"{LIDARR_URL}/api/v1/artist", json=payload, headers=headers).json()
+            add_res = requests.post(f"{LIDARR_URL}/api/v1/artist", json=payload, headers=headers, proxies=proxies, timeout=30).json()
             artist_id = add_res.get("id")
             if not artist_id:
                 return False, "Error al añadir el artista a Lidarr."
             return True, "Artista añadido a Lidarr. Descargará tras sincronizar."
             
-        albums = requests.get(f"{LIDARR_URL}/api/v1/album", params={"artistId": artist_id}, headers=headers).json()
+        albums = requests.get(f"{LIDARR_URL}/api/v1/album", params={"artistId": artist_id}, headers=headers, proxies=proxies, timeout=30).json()
         if not albums:
             return True, "El artista existe pero aún no tiene álbumes listados."
             
@@ -433,14 +464,14 @@ def request_lidarr_song(artist, title):
         if best_album and best_score > 70:
             alb_id = best_album["id"]
             best_album["monitored"] = True
-            requests.put(f"{LIDARR_URL}/api/v1/album/{alb_id}", json=best_album, headers=headers)
+            requests.put(f"{LIDARR_URL}/api/v1/album/{alb_id}", json=best_album, headers=headers, proxies=proxies, timeout=30)
             cmd = {"name": "AlbumSearch", "albumIds": [alb_id]}
-            requests.post(f"{LIDARR_URL}/api/v1/command", json=cmd, headers=headers)
+            requests.post(f"{LIDARR_URL}/api/v1/command", json=cmd, headers=headers, proxies=proxies, timeout=30)
             return True, f"Búsqueda lanzada para: {best_album.get('title')}"
         else:
             return True, "Artista detectado, pero sin match claro de álbum/single."
     except Exception as e:
-        return False, str(e)
+        return False, f"Error de conexión: {str(e)}"
 
 @app.route('/send_lidarr/<int:song_id>')
 def send_lidarr(song_id):
