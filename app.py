@@ -8,7 +8,7 @@ import re
 import threading
 import mysql.connector
 from thefuzz import fuzz
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from dotenv import load_dotenv
 import unicodedata
 
