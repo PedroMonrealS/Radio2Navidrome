@@ -453,23 +453,44 @@ def request_lidarr_song(artist, title):
         if not albums:
             return True, "El artista existe pero aún no tiene álbumes listados."
             
-        best_album = None
-        best_score = 0
-        for alb in albums:
-            score = fuzz.partial_ratio(title.lower(), alb.get("title", "").lower())
-            if score > best_score:
-                best_score = score
-                best_album = alb
+        # 1. Buscar entre las pistas del artista para encontrar a qué álbum pertenece la canción
+        tracks = requests.get(f"{LIDARR_URL}/api/v1/track", params={"artistId": artist_id}, headers=headers, proxies=proxies, timeout=30).json()
+        
+        target_album_id = None
+        best_track_score = 0
+        for t in tracks:
+            score = fuzz.partial_ratio(title.lower(), t.get("title", "").lower())
+            if score > best_track_score:
+                best_track_score = score
+                target_album_id = t.get("albumId")
                 
-        if best_album and best_score > 70:
+        best_album = None
+        # Si hemos encontrado la canción con buena precisión, cogemos su álbum
+        if target_album_id and best_track_score > 75:
+            best_album = next((a for a in albums if a["id"] == target_album_id), None)
+            
+        # 2. Si no encontró la pista (o falló), intentamos buscar si el álbum se llama igual que la canción (Single)
+        if not best_album:
+            best_score = 0
+            for alb in albums:
+                score = fuzz.partial_ratio(title.lower(), alb.get("title", "").lower())
+                if score > best_score:
+                    best_score = score
+                    best_album = alb
+            if best_score <= 70:
+                best_album = None
+                
+        # 3. Si por fin tenemos un álbum claro, lo marcamos para vigilar y lo mandamos a buscar
+        if best_album:
             alb_id = best_album["id"]
             best_album["monitored"] = True
             requests.put(f"{LIDARR_URL}/api/v1/album/{alb_id}", json=best_album, headers=headers, proxies=proxies, timeout=30)
+            
             cmd = {"name": "AlbumSearch", "albumIds": [alb_id]}
             requests.post(f"{LIDARR_URL}/api/v1/command", json=cmd, headers=headers, proxies=proxies, timeout=30)
-            return True, f"Búsqueda lanzada para: {best_album.get('title')}"
+            return True, f"Búsqueda lanzada para el disco: {best_album.get('title')}"
         else:
-            return True, "Artista detectado, pero sin match claro de álbum/single."
+            return True, "Artista detectado, pero no se encontró en qué disco está esa canción."
     except Exception as e:
         return False, f"Error de conexión: {str(e)}"
 
