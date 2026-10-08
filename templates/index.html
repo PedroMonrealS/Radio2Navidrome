@@ -34,24 +34,44 @@
     </style>
     <script>
         function performAction(url, btn) {
-            // Disable buttons temporarily to prevent double click
-            const buttons = btn.closest('.actions').querySelectorAll('button');
+            const actionsDiv = btn.closest('.actions');
+            const buttons = actionsDiv.querySelectorAll('button');
             buttons.forEach(b => b.disabled = true);
+            
+            const li = btn.closest('li');
+            let nextLi = li.nextElementSibling;
+            
+            // Detener el audio actual inmediatamente
+            const currentAudio = li.querySelector('audio');
+            if (currentAudio) currentAudio.pause();
+            
+            // Comprobar si el modo rápido está activado
+            const toggle = document.getElementById('autoplayToggle');
+            const autoplay = toggle && toggle.checked;
+            
+            // Reproducir el siguiente inmediatamente (vinculado al clic del usuario para evitar bloqueos del navegador)
+            if (autoplay && nextLi) {
+                const nextAudio = nextLi.querySelector('audio');
+                if (nextAudio) {
+                    nextAudio.play().catch(err => console.log("Autoplay bloqueado:", err));
+                    // Hacer scroll suave hacia el siguiente elemento para no perderlo de vista
+                    nextLi.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
             
             const separator = url.includes('?') ? '&' : '?';
             fetch(url + separator + 'ajax=1')
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        const li = btn.closest('li');
                         li.style.opacity = '0.3';
                         setTimeout(() => li.remove(), 300);
-                        
-                        // Decrementar contador de la pestaña (opcional)
-                        // Para que cuadre todo al instante sin recargar la pág entera
                     } else {
                         alert("Error al procesar la acción.");
                         buttons.forEach(b => b.disabled = false);
+                        if (autoplay && nextLi && nextLi.querySelector('audio')) {
+                            nextLi.querySelector('audio').pause();
+                        }
                     }
                 })
                 .catch(err => {
@@ -70,6 +90,13 @@
             <a href="/?tab=pendientes" class="tab-btn {% if tab == 'pendientes' %}active{% endif %}">📝 Pendientes ({{ counts.pendientes }})</a>
             <a href="/?tab=descargar" class="tab-btn {% if tab == 'descargar' %}active{% endif %}">⬇️ A Descargar ({{ counts.descargar }})</a>
             <a href="/?tab=playlist" class="tab-btn {% if tab == 'playlist' %}active{% endif %}">🎶 Falta Playlist ({{ counts.playlist }})</a>
+        </div>
+        
+        <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 2px dashed #007BFF;">
+            <label style="font-weight: bold; cursor: pointer; font-size: 1.1em; color: #333;">
+                <input type="checkbox" id="autoplayToggle" style="transform: scale(1.3); margin-right: 10px;" checked> 
+                🚀 Modo Rápido (Auto-reproducir la siguiente canción al procesar)
+            </label>
         </div>
         
         {% if tab == 'descargar' %}
