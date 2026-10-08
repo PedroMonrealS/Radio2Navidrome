@@ -23,10 +23,13 @@ RADIO_API_URLS = [
     "https://core-search.radioplayer.cloud/724/qp/v4/events?rpId=167"
 ]
 
-NAVIDROME_URL = os.environ.get("NAVIDROME_URL", "https://tu-navidrome.com")
-NAVIDROME_USER = os.environ.get("NAVIDROME_USER", "usuario")
+NAVIDROME_URL = os.environ.get("NAVIDROME_URL", "")
+NAVIDROME_USER = os.environ.get("NAVIDROME_USER", "")
 NAVIDROME_PASS = os.environ.get("NAVIDROME_PASS", "")
 TARGET_PLAYLIST_NAME = os.environ.get("TARGET_PLAYLIST_NAME", "Canciones que te gustan")
+
+LIDARR_URL = os.environ.get("LIDARR_URL", "")
+LIDARR_API = os.environ.get("LIDARR_API", "")
 
 MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
 MYSQL_USER = os.environ.get("MYSQL_USER", "root")
@@ -78,6 +81,9 @@ def init_db():
         except: pass
         
         try: cursor.execute("ALTER TABLE canciones_descubiertas ADD COLUMN preview_url TEXT")
+        except: pass
+        
+        try: cursor.execute("ALTER TABLE canciones_descubiertas ADD COLUMN lidarr_status VARCHAR(50) DEFAULT ''")
         except: pass
         
         conn.commit()
@@ -380,6 +386,83 @@ def change_status(song_id, status):
         except: pass
     if request.args.get('ajax'): return ajax_response()
     return redirect(url_for('index', tab=request.args.get('tab', 'pendientes')))
+
+def request_lidarr_song(artist, title):
+    headers = {"X-Api-Key": LIDARR_API}
+    try:
+        res = requests.get(f"{LIDARR_URL}/api/v1/artist/lookup", params={"term": artist}, headers=headers, timeout=10)
+        if res.status_code != 200 or not res.json():
+            return False, "Artista no encontrado en Lidarr/MusicBrainz."
+        
+        best_artist = res.json()[0]
+        artist_id = best_artist.get("id")
+        
+        if not artist_id:
+            roots = requests.get(f"{LIDARR_URL}/api/v1/rootfolder", headers=headers).json()
+            q_profiles = requests.get(f"{LIDARR_URL}/api/v1/qualityprofile", headers=headers).json()
+            m_profiles = requests.get(f"{LIDARR_URL}/api/v1/metadataprofile", headers=headers).json()
+            
+            if not roots or not q_profiles or not m_profiles:
+                return False, "Faltan perfiles (Root/Quality/Metadata) en Lidarr."
+                
+            payload = best_artist
+            payload["qualityProfileId"] = q_profiles[0]["id"]
+            payload["metadataProfileId"] = m_profiles[0]["id"]
+            payload["rootFolderPath"] = roots[0]["path"]
+            payload["monitored"] = True
+            payload["addOptions"] = {"monitor": "none"}
+            
+            add_res = requests.post(f"{LIDARR_URL}/api/v1/artist", json=payload, headers=headers).json()
+            artist_id = add_res.get("id")
+            if not artist_id:
+                return False, "Error al añadir el artista a Lidarr."
+            return True, "Artista añadido a Lidarr. Descargará tras sincronizar."
+            
+        albums = requests.get(f"{LIDARR_URL}/api/v1/album", params={"artistId": artist_id}, headers=headers).json()
+        if not albums:
+            return True, "El artista existe pero aún no tiene álbumes listados."
+            
+        best_album = None
+        best_score = 0
+        for alb in albums:
+            score = fuzz.partial_ratio(title.lower(), alb.get("title", "").lower())
+            if score > best_score:
+                best_score = score
+                best_album = alb
+                
+        if best_album and best_score > 70:
+            alb_id = best_album["id"]
+            best_album["monitored"] = True
+            requests.put(f"{LIDARR_URL}/api/v1/album/{alb_id}", json=best_album, headers=headers)
+            cmd = {"name": "AlbumSearch", "albumIds": [alb_id]}
+            requests.post(f"{LIDARR_URL}/api/v1/command", json=cmd, headers=headers)
+            return True, f"Búsqueda lanzada para: {best_album.get('title')}"
+        else:
+            return True, "Artista detectado, pero sin match claro de álbum/single."
+    except Exception as e:
+        return False, str(e)
+
+@app.route('/send_lidarr/<int:song_id>')
+def send_lidarr(song_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT title, artist FROM canciones_descubiertas WHERE id = %s", (song_id,))
+        row = cursor.fetchone()
+        
+        if row:
+            success, msg = request_lidarr_song(row['artist'], row['title'])
+            if success:
+                cursor.execute("UPDATE canciones_descubiertas SET lidarr_status = 'enviado' WHERE id = %s", (song_id,))
+                conn.commit()
+            conn.close()
+            if request.args.get('ajax'): return jsonify({"success": success, "message": msg})
+            return redirect(url_for('index', tab='descargar'))
+    except Exception as e:
+        pass
+        
+    if request.args.get('ajax'): return jsonify({"success": False, "message": "Error interno"})
+    return redirect(url_for('index', tab='descargar'))
 
 @app.route('/delete/<int:song_id>')
 def delete_song(song_id):

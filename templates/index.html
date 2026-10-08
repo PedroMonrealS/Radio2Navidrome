@@ -33,7 +33,7 @@
         .page-link:hover:not(.active) { background: #ccc; }
     </style>
     <script>
-        function performAction(url, btn) {
+        function performAction(url, btn, removeLi = true) {
             const actionsDiv = btn.closest('.actions');
             const buttons = actionsDiv.querySelectorAll('button');
             buttons.forEach(b => b.disabled = true);
@@ -41,20 +41,16 @@
             const li = btn.closest('li');
             let nextLi = li.nextElementSibling;
             
-            // Detener el audio actual inmediatamente
             const currentAudio = li.querySelector('audio');
             if (currentAudio) currentAudio.pause();
             
-            // Comprobar si el modo rápido está activado
             const toggle = document.getElementById('autoplayToggle');
             const autoplay = toggle && toggle.checked;
             
-            // Reproducir el siguiente inmediatamente (vinculado al clic del usuario para evitar bloqueos del navegador)
-            if (autoplay && nextLi) {
+            if (autoplay && nextLi && removeLi) {
                 const nextAudio = nextLi.querySelector('audio');
                 if (nextAudio) {
                     nextAudio.play().catch(err => console.log("Autoplay bloqueado:", err));
-                    // Hacer scroll suave hacia el siguiente elemento para no perderlo de vista
                     nextLi.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }
@@ -64,10 +60,25 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        li.style.opacity = '0.3';
-                        setTimeout(() => li.remove(), 300);
+                        if (removeLi) {
+                            li.style.opacity = '0.3';
+                            setTimeout(() => li.remove(), 300);
+                        } else {
+                            // Cambiamos el botón visualmente a estado enviado
+                            btn.outerHTML = `<span class="btn" style="background: #28a745; cursor: default;">✅ ${data.message || 'Enviado'}</span>`;
+                            buttons.forEach(b => b.disabled = false);
+                            
+                            // Opcional: auto-play de todas formas si se pidió
+                            if (autoplay && nextLi) {
+                                const nextAudio = nextLi.querySelector('audio');
+                                if (nextAudio) {
+                                    nextAudio.play().catch(err => console.log("Autoplay:", err));
+                                    nextLi.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                            }
+                        }
                     } else {
-                        alert("Error al procesar la acción.");
+                        alert(data.message || "Error al procesar la acción.");
                         buttons.forEach(b => b.disabled = false);
                         if (autoplay && nextLi && nextLi.querySelector('audio')) {
                             nextLi.querySelector('audio').pause();
@@ -126,6 +137,11 @@
                             <button onclick="performAction('/change_status/{{ song.id }}/rechazada', this)" class="btn btn-danger">👎 Rechazar</button>
                         {% elif tab == 'descargar' %}
                             <button onclick="performAction('/delete/{{ song.id }}', this)" class="btn btn-danger">🗑️ Borrar</button>
+                            {% if song.lidarr_status == 'enviado' %}
+                                <span class="btn" style="background: #28a745; cursor: default;">✅ Solicitado a Lidarr</span>
+                            {% else %}
+                                <button onclick="performAction('/send_lidarr/{{ song.id }}', this, false)" class="btn btn-info">🛸 Pedir a Lidarr</button>
+                            {% endif %}
                         {% elif tab == 'playlist' %}
                             <button onclick="performAction('/add_to_navidrome_playlist/{{ song.id }}', this)" class="btn btn-success">➕ Añadir a Navidrome</button>
                             <button onclick="performAction('/ignore_playlist/{{ song.id }}', this)" class="btn btn-danger">❌ Omitir</button>
