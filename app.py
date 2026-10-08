@@ -298,29 +298,56 @@ def radio_monitor_loop():
 # ----- FLASK WEB UI -----
 @app.route('/')
 def index():
+    tab = request.args.get('tab', 'pendientes')
+    page = int(request.args.get('page', 1))
+    per_page = 30
+    offset = (page - 1) * per_page
+    
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     
-    cursor.execute("SELECT * FROM canciones_descubiertas WHERE estado = 'aceptada' ORDER BY discovered_at DESC")
-    aceptadas = cursor.fetchall()
+    # Obtener totales para los contadores de las pestañas
+    cursor.execute("SELECT COUNT(*) as c FROM canciones_descubiertas WHERE estado = 'pendiente'")
+    count_pendientes = cursor.fetchone()['c']
     
-    cursor.execute("SELECT * FROM canciones_descubiertas WHERE estado = 'pendiente' ORDER BY discovered_at DESC")
-    pendientes = cursor.fetchall()
-
-    cursor.execute("SELECT * FROM canciones_descubiertas WHERE estado = 'rechazada' ORDER BY discovered_at DESC")
-    rechazadas = cursor.fetchall()
+    cursor.execute("SELECT COUNT(*) as c FROM canciones_descubiertas WHERE estado = 'aceptada'")
+    count_aceptadas = cursor.fetchone()['c']
     
-    cursor.execute("SELECT * FROM canciones_libreria WHERE en_playlist = FALSE AND ignorar_playlist = FALSE ORDER BY added_at DESC")
-    sin_playlist = cursor.fetchall()
+    cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE en_playlist = FALSE AND ignorar_playlist = FALSE")
+    count_sin_playlist = cursor.fetchone()['c']
     
+    # Obtener los datos de la pestaña actual paginados
+    data = []
+    total_items = 0
+    
+    if tab == 'pendientes':
+        total_items = count_pendientes
+        cursor.execute("SELECT * FROM canciones_descubiertas WHERE estado = 'pendiente' ORDER BY discovered_at DESC LIMIT %s OFFSET %s", (per_page, offset))
+        data = cursor.fetchall()
+    elif tab == 'descargar':
+        total_items = count_aceptadas
+        cursor.execute("SELECT * FROM canciones_descubiertas WHERE estado = 'aceptada' ORDER BY discovered_at DESC LIMIT %s OFFSET %s", (per_page, offset))
+        data = cursor.fetchall()
+    elif tab == 'playlist':
+        total_items = count_sin_playlist
+        cursor.execute("SELECT * FROM canciones_libreria WHERE en_playlist = FALSE AND ignorar_playlist = FALSE ORDER BY added_at DESC LIMIT %s OFFSET %s", (per_page, offset))
+        data = cursor.fetchall()
+        
     conn.close()
-    return render_template('index.html', aceptadas=aceptadas, pendientes=pendientes, rechazadas=rechazadas, sin_playlist=sin_playlist)
+    
+    total_pages = (total_items + per_page - 1) // per_page
+    
+    return render_template('index.html', 
+                           data=data, 
+                           tab=tab, 
+                           page=page, 
+                           total_pages=total_pages,
+                           counts={'pendientes': count_pendientes, 'descargar': count_aceptadas, 'playlist': count_sin_playlist})
 
 @app.route('/force_sync')
 def force_sync():
-    # Llama a la misma función que usa el proceso en segundo plano
     sync_aceptadas_to_libreria()
-    return redirect(url_for('index'))
+    return redirect(url_for('index', tab='descargar'))
 
 @app.route('/add_manual', methods=['POST'])
 def add_manual():
@@ -336,7 +363,10 @@ def add_manual():
             conn.commit()
             conn.close()
         except: pass
-    return redirect(url_for('index'))
+    return redirect(url_for('index', tab='descargar'))
+
+def ajax_response(success=True):
+    return jsonify({"success": success})
 
 @app.route('/change_status/<int:song_id>/<status>')
 def change_status(song_id, status):
@@ -348,7 +378,8 @@ def change_status(song_id, status):
             conn.commit()
             conn.close()
         except: pass
-    return redirect(url_for('index'))
+    if request.args.get('ajax'): return ajax_response()
+    return redirect(url_for('index', tab=request.args.get('tab', 'pendientes')))
 
 @app.route('/delete/<int:song_id>')
 def delete_song(song_id):
@@ -359,7 +390,8 @@ def delete_song(song_id):
         conn.commit()
         conn.close()
     except: pass
-    return redirect(url_for('index'))
+    if request.args.get('ajax'): return ajax_response()
+    return redirect(url_for('index', tab=request.args.get('tab', 'descargar')))
 
 @app.route('/ignore_playlist/<int:db_id>')
 def ignore_playlist(db_id):
@@ -371,10 +403,12 @@ def ignore_playlist(db_id):
         conn.close()
     except Exception as e:
         print(f"Error omitiendo playlist: {e}")
-    return redirect(url_for('index'))
+    if request.args.get('ajax'): return ajax_response()
+    return redirect(url_for('index', tab='playlist'))
 
 @app.route('/add_to_navidrome_playlist/<int:db_id>')
 def add_to_navidrome_playlist_route(db_id):
+    success = False
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -383,7 +417,6 @@ def add_to_navidrome_playlist_route(db_id):
         
         if row:
             nav_id = row['navidrome_id']
-            # Si la canción es antigua y no tiene ID guardado, lo buscamos sobre la marcha
             if not nav_id:
                 in_nav, nav_id = search_in_navidrome(row['title'], row['artist'])
                 if nav_id:
@@ -392,16 +425,14 @@ def add_to_navidrome_playlist_route(db_id):
             
             if nav_id:
                 playlist_id = get_target_playlist_id()
-                success = False
                 
                 if playlist_id:
                     current_tracks = get_playlist_track_ids(playlist_id)
                     if nav_id in current_tracks:
-                        success = True # Ya estaba en la playlist, no la duplicamos
+                        success = True
                     else:
                         success = add_song_to_playlist(playlist_id, nav_id)
                 
-                # Le damos a "Me gusta" (estrella) en Navidrome independientemente de si hay playlist o no
                 star_song_in_navidrome(nav_id)
                 
                 if success:
@@ -411,7 +442,8 @@ def add_to_navidrome_playlist_route(db_id):
     except Exception as e:
         print(f"Error añadiendo a playlist/favoritos: {e}")
         
-    return redirect(url_for('index'))
+    if request.args.get('ajax'): return ajax_response(success)
+    return redirect(url_for('index', tab='playlist'))
 
 if __name__ == '__main__':
     init_db()

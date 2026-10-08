@@ -7,9 +7,10 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         h1 { text-align: center; color: #333; }
-        .container { max-width: 1400px; margin: 0 auto; display: flex; gap: 20px; flex-wrap: wrap; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; min-width: 300px; }
-        h2 { border-bottom: 2px solid #007BFF; padding-bottom: 10px; color: #444; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .tab-btn { padding: 10px 20px; text-decoration: none; border-radius: 4px 4px 0 0; color: #555; font-weight: bold; cursor: pointer; border: none; background: #eee; font-size: 1.1em; }
+        .tab-btn.active { background: #007BFF; color: white; }
         ul { list-style: none; padding: 0; }
         li { padding: 15px 10px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 10px; }
         li:last-child { border-bottom: none; }
@@ -17,7 +18,7 @@
         .artist { font-weight: bold; color: #007BFF; }
         .station { font-size: 0.8em; color: #888; display: block; }
         .actions { display: flex; gap: 5px; }
-        .btn { padding: 6px 12px; text-decoration: none; border-radius: 4px; color: white; font-size: 0.9em; text-align: center; cursor: pointer; }
+        .btn { padding: 6px 12px; text-decoration: none; border-radius: 4px; color: white; font-size: 0.9em; text-align: center; cursor: pointer; border: none; }
         .btn-success { background: #28a745; }
         .btn-danger { background: #dc3545; }
         .btn-warning { background: #ffc107; color: #333; }
@@ -26,118 +27,115 @@
         .add-form input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .add-form button { padding: 8px 15px; background: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer; }
         audio { width: 100%; height: 35px; outline: none; }
+        .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+        .page-link { padding: 8px 12px; background: #ddd; color: #333; text-decoration: none; border-radius: 4px; font-weight: bold; }
+        .page-link.active { background: #007BFF; color: white; }
+        .page-link:hover:not(.active) { background: #ccc; }
     </style>
+    <script>
+        function performAction(url, btn) {
+            // Disable buttons temporarily to prevent double click
+            const buttons = btn.closest('.actions').querySelectorAll('button');
+            buttons.forEach(b => b.disabled = true);
+            
+            const separator = url.includes('?') ? '&' : '?';
+            fetch(url + separator + 'ajax=1')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const li = btn.closest('li');
+                        li.style.opacity = '0.3';
+                        setTimeout(() => li.remove(), 300);
+                        
+                        // Decrementar contador de la pestaña (opcional)
+                        // Para que cuadre todo al instante sin recargar la pág entera
+                    } else {
+                        alert("Error al procesar la acción.");
+                        buttons.forEach(b => b.disabled = false);
+                    }
+                })
+                .catch(err => {
+                    alert("Error de red.");
+                    buttons.forEach(b => b.disabled = false);
+                });
+        }
+    </script>
 </head>
 <body>
     <h1>📻 Monitor de Radio & Navidrome</h1>
     
     <div class="container">
-        <!-- PENDIENTES -->
-        <div class="card">
-            <h2>⏳ Pendientes ({{ pendientes|length }})</h2>
-            <ul>
-                {% for song in pendientes %}
-                <li>
-                    <div class="song-info">
-                        <div>
-                            <span class="artist">{{ song.artist }}</span> - {{ song.title }}
-                            <span class="station">Radio: {{ song.station }}</span>
-                        </div>
-                        <div class="actions">
-                            <a href="/change_status/{{ song.id }}/aceptada" class="btn btn-success">👍</a>
-                            <a href="/change_status/{{ song.id }}/rechazada" class="btn btn-danger">👎</a>
-                        </div>
-                    </div>
-                    {% if song.preview_url %}
-                    <audio controls src="{{ song.preview_url }}"></audio>
-                    {% endif %}
-                </li>
-                {% else %}
-                <li><p>No hay canciones pendientes.</p></li>
-                {% endfor %}
-            </ul>
+        
+        <div class="tabs">
+            <a href="/?tab=pendientes" class="tab-btn {% if tab == 'pendientes' %}active{% endif %}">📝 Pendientes ({{ counts.pendientes }})</a>
+            <a href="/?tab=descargar" class="tab-btn {% if tab == 'descargar' %}active{% endif %}">⬇️ A Descargar ({{ counts.descargar }})</a>
+            <a href="/?tab=playlist" class="tab-btn {% if tab == 'playlist' %}active{% endif %}">🎶 Falta Playlist ({{ counts.playlist }})</a>
         </div>
-
-        <!-- ACEPTADAS -->
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007BFF; padding-bottom: 10px; margin-bottom: 15px;">
-                <h2 style="border: none; padding: 0; margin: 0;">✅ A Descargar ({{ aceptadas|length }})</h2>
-                <a href="/force_sync" class="btn btn-info" style="font-size: 0.8em;">🔄 Sincronizar</a>
+        
+        {% if tab == 'descargar' %}
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
+                <form action="/add_manual" method="POST" class="add-form" style="margin: 0; width: 70%;">
+                    <input type="text" name="artist" placeholder="Artista" required>
+                    <input type="text" name="title" placeholder="Título" required>
+                    <button type="submit">➕ Añadir Manual</button>
+                </form>
+                <a href="/force_sync" class="btn btn-warning" style="padding: 10px 15px; font-weight: bold;">🔄 Forzar Sincronización</a>
             </div>
-            <form class="add-form" action="/add_manual" method="POST">
-                <input type="text" name="artist" placeholder="Artista" required>
-                <input type="text" name="title" placeholder="Título" required>
-                <button type="submit">Añadir</button>
-            </form>
-            <ul>
-                {% for song in aceptadas %}
-                <li>
-                    <div class="song-info">
-                        <div>
-                            <span class="artist">{{ song.artist }}</span> - {{ song.title }}
-                            <span class="station">{{ song.station }}</span>
-                        </div>
-                        <div class="actions">
-                            <a href="/change_status/{{ song.id }}/rechazada" class="btn btn-warning">Rechazar</a>
-                        </div>
+        {% endif %}
+        
+        <ul>
+            {% for song in data %}
+            <li style="transition: opacity 0.3s;">
+                <div class="song-info">
+                    <div>
+                        <span class="artist">{{ song.artist }}</span> - {{ song.title }}
+                        {% if song.station %}
+                        <span class="station">Radio: {{ song.station }}</span>
+                        {% endif %}
                     </div>
-                    {% if song.preview_url %}
-                    <audio controls src="{{ song.preview_url }}"></audio>
-                    {% endif %}
-                </li>
-                {% else %}
-                <li><p>No hay canciones pendientes de descargar.</p></li>
-                {% endfor %}
-            </ul>
+                    <div class="actions">
+                        {% if tab == 'pendientes' %}
+                            <button onclick="performAction('/change_status/{{ song.id }}/aceptada', this)" class="btn btn-success">👍 Aceptar</button>
+                            <button onclick="performAction('/change_status/{{ song.id }}/rechazada', this)" class="btn btn-danger">👎 Rechazar</button>
+                        {% elif tab == 'descargar' %}
+                            <button onclick="performAction('/delete/{{ song.id }}', this)" class="btn btn-danger">🗑️ Borrar</button>
+                        {% elif tab == 'playlist' %}
+                            <button onclick="performAction('/add_to_navidrome_playlist/{{ song.id }}', this)" class="btn btn-success">➕ Añadir a Navidrome</button>
+                            <button onclick="performAction('/ignore_playlist/{{ song.id }}', this)" class="btn btn-danger">❌ Omitir</button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if song.preview_url %}
+                    <audio controls preload="none">
+                        <source src="{{ song.preview_url }}" type="audio/mpeg">
+                    </audio>
+                {% endif %}
+            </li>
+            {% else %}
+            <li style="text-align: center; color: #888; font-size: 1.1em; padding: 40px;">No hay canciones en esta sección.</li>
+            {% endfor %}
+        </ul>
+        
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+                <a href="/?tab={{ tab }}&page={{ page - 1 }}" class="page-link">⬅️ Anterior</a>
+            {% endif %}
+            
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                    <span class="page-link active">{{ p }}</span>
+                {% elif p >= page - 2 and p <= page + 2 %}
+                    <a href="/?tab={{ tab }}&page={{ p }}" class="page-link">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page < total_pages %}
+                <a href="/?tab={{ tab }}&page={{ page + 1 }}" class="page-link">Siguiente ➡️</a>
+            {% endif %}
         </div>
+        {% endif %}
 
-        <!-- EN LIBRERÍA PERO SIN PLAYLIST -->
-        <div class="card">
-            <h2>🎶 Falta Playlist ({{ sin_playlist|length }})</h2>
-            <p style="font-size: 0.85em; color: #666;">Canciones descargadas pero no están en "Canciones que te gustan"</p>
-            <ul>
-                {% for song in sin_playlist %}
-                <li>
-                    <div class="song-info">
-                        <div>
-                            <span class="artist">{{ song.artist }}</span> - {{ song.title }}
-                        </div>
-                        <div class="actions">
-                            <a href="/add_to_navidrome_playlist/{{ song.id }}" class="btn btn-info">+ Playlist y 💖</a>
-                            <a href="/ignore_playlist/{{ song.id }}" class="btn btn-warning">Omitir</a>
-                        </div>
-                    </div>
-                    {% if song.preview_url %}
-                    <audio controls src="{{ song.preview_url }}"></audio>
-                    {% endif %}
-                </li>
-                {% else %}
-                <li><p>¡Todo al día!</p></li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <!-- RECHAZADAS -->
-        <div class="card">
-            <h2>❌ Rechazadas ({{ rechazadas|length }})</h2>
-            <ul>
-                {% for song in rechazadas %}
-                <li>
-                    <div class="song-info">
-                        <div>
-                            <span class="artist">{{ song.artist }}</span> - {{ song.title }}
-                        </div>
-                        <div class="actions">
-                            <a href="/change_status/{{ song.id }}/aceptada" class="btn btn-success">Recuperar</a>
-                            <a href="/delete/{{ song.id }}" class="btn btn-danger">X</a>
-                        </div>
-                    </div>
-                </li>
-                {% else %}
-                <li><p>No hay canciones rechazadas.</p></li>
-                {% endfor %}
-            </ul>
-        </div>
     </div>
 </body>
 </html>
