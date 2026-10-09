@@ -31,6 +31,10 @@ TARGET_PLAYLIST_NAME = os.environ.get("TARGET_PLAYLIST_NAME", "Canciones que te 
 LIDARR_URL = os.environ.get("LIDARR_URL", "")
 LIDARR_API = os.environ.get("LIDARR_API", "")
 
+QBIT_URL = os.environ.get("QBIT_URL", "http://192.168.4.147:8080")
+QBIT_USER = os.environ.get("QBIT_USER", "admin")
+QBIT_PASS = os.environ.get("QBIT_PASS", "287DryMops")
+
 MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
 MYSQL_USER = os.environ.get("MYSQL_USER", "root")
 MYSQL_PASS = os.environ.get("MYSQL_PASS", "")
@@ -447,11 +451,19 @@ def request_lidarr_song(artist, title):
             artist_id = add_res.get("id")
             if not artist_id:
                 return False, "Error al añadir el artista a Lidarr."
-            return True, "Artista añadido a Lidarr. Descargará tras sincronizar."
             
-        albums = requests.get(f"{LIDARR_URL}/api/v1/album", params={"artistId": artist_id}, headers=headers, proxies=proxies, timeout=30).json()
+            # El artista es nuevo, Lidarr necesita unos segundos para descargar su discografía de MusicBrainz
+            time.sleep(5) 
+            
+        # Intentar obtener los álbumes (con reintentos si el artista es nuevo)
+        albums = []
+        for _ in range(3):
+            albums = requests.get(f"{LIDARR_URL}/api/v1/album", params={"artistId": artist_id}, headers=headers, proxies=proxies, timeout=30).json()
+            if albums: break
+            time.sleep(3)
+            
         if not albums:
-            return True, "El artista existe pero aún no tiene álbumes listados."
+            return False, "El artista se añadió, pero aún no tiene álbumes listados en Lidarr. Inténtalo en un rato."
             
         # 1. Buscar entre las pistas del artista para encontrar a qué álbum pertenece la canción
         tracks = requests.get(f"{LIDARR_URL}/api/v1/track", params={"artistId": artist_id}, headers=headers, proxies=proxies, timeout=30).json()
@@ -490,7 +502,7 @@ def request_lidarr_song(artist, title):
             requests.post(f"{LIDARR_URL}/api/v1/command", json=cmd, headers=headers, proxies=proxies, timeout=30)
             return True, f"Búsqueda lanzada para el disco: {best_album.get('title')}"
         else:
-            return True, "Artista detectado, pero no se encontró en qué disco está esa canción."
+            return False, "Artista detectado, pero MusicBrainz/Lidarr no tiene registrado ningún disco/single con esta canción."
     except Exception as e:
         return False, f"Error de conexión: {str(e)}"
 
@@ -515,6 +527,50 @@ def send_lidarr(song_id):
         
     if request.args.get('ajax'): return jsonify({"success": False, "message": "Error interno"})
     return redirect(url_for('index', tab='descargar'))
+
+@app.route('/live_status/<int:song_id>')
+def live_status(song_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT title, artist FROM canciones_descubiertas WHERE id = %s", (song_id,))
+        row = cursor.fetchone()
+        conn.close()
+        if not row: return jsonify({"status_text": "Error"})
+        
+        artist = row['artist']
+        
+        # Primero miramos Lidarr Queue
+        headers = {"X-Api-Key": LIDARR_API}
+        queue = requests.get(f"{LIDARR_URL}/api/v1/queue", headers=headers, timeout=5).json()
+        for item in queue.get('records', []):
+            if clean_text(artist) in clean_text(item.get('artist', {}).get('name', '')):
+                stat = item.get('status', '')
+                if stat == 'Downloading': stat = 'Descargando'
+                return jsonify({"status_text": f"⏳ Lidarr: {stat}", "color": "#17a2b8"})
+                
+        # Luego miramos Qbit
+        session = requests.Session()
+        session.post(f"{QBIT_URL}/api/v2/auth/login", data={"username": QBIT_USER, "password": QBIT_PASS}, timeout=5)
+        torrents = session.get(f"{QBIT_URL}/api/v2/torrents/info", timeout=5).json()
+        
+        for t in torrents:
+            if clean_text(artist) in clean_text(t['name']):
+                prog = round(t['progress'] * 100, 1)
+                state = t['state']
+                
+                color = "#007bff"
+                text_state = state
+                if "downloading" in state.lower(): text_state = "Descargando"; color = "#007bff"
+                elif "stalled" in state.lower(): text_state = "Sin semillas"; color = "#ffc107"
+                elif "paused" in state.lower(): text_state = "Pausado"; color = "#6c757d"
+                elif "uploading" in state.lower() or prog == 100: text_state = "Completado"; color = "#28a745"
+                
+                return jsonify({"status_text": f"📥 Torrent: {prog}% ({text_state})", "color": color})
+                
+        return jsonify({"status_text": "🔍 Buscando origen / Sin semillas", "color": "#6c757d"})
+    except Exception as e:
+        return jsonify({"status_text": "⚠️ Error conectando a Qbit", "color": "#dc3545"})
 
 @app.route('/delete/<int:song_id>')
 def delete_song(song_id):

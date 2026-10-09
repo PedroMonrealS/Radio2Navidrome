@@ -138,7 +138,7 @@
                         {% elif tab == 'descargar' %}
                             <button onclick="performAction('/delete/{{ song.id }}', this)" class="btn btn-danger">🗑️ Borrar</button>
                             {% if song.lidarr_status == 'enviado' %}
-                                <span class="btn" style="background: #28a745; cursor: default;">✅ Solicitado a Lidarr</span>
+                                <span class="btn status-badge" data-id="{{ song.id }}" style="background: #28a745; cursor: default;">✅ Solicitado a Lidarr</span>
                             {% else %}
                                 <button onclick="performAction('/send_lidarr/{{ song.id }}', this, false)" class="btn btn-info">🛸 Pedir a Lidarr</button>
                             {% endif %}
@@ -180,5 +180,27 @@
         {% endif %}
 
     </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll('.status-badge').forEach(badge => {
+                const songId = badge.getAttribute('data-id');
+                // Mostrar cargando
+                badge.innerHTML = "🔄 Consultando estado...";
+                
+                fetch(`/live_status/${songId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status_text) {
+                            badge.innerHTML = data.status_text;
+                            if(data.color) badge.style.background = data.color;
+                        }
+                    })
+                    .catch(err => {
+                        badge.innerHTML = "⚠️ Error de red";
+                    });
+            });
+        });
+    </script>
 </body>
 </html>
