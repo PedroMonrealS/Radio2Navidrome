@@ -11,6 +11,7 @@ from thefuzz import fuzz
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from dotenv import load_dotenv
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv() # Carga las variables desde el archivo .env
 
@@ -88,6 +89,17 @@ def init_db():
         except: pass
         
         try: cursor.execute("ALTER TABLE canciones_descubiertas ADD COLUMN lidarr_status VARCHAR(50) DEFAULT ''")
+        except: pass
+        
+        try: cursor.execute("ALTER TABLE canciones_libreria ADD COLUMN estado_archivo VARCHAR(50) DEFAULT 'ok'")
+        except: pass
+        try: cursor.execute("ALTER TABLE canciones_libreria ADD COLUMN nuevo_navidrome_id VARCHAR(255) DEFAULT NULL")
+        except: pass
+        try: cursor.execute("ALTER TABLE canciones_libreria ADD COLUMN nuevo_titulo VARCHAR(255) DEFAULT NULL")
+        except: pass
+        try: cursor.execute("ALTER TABLE canciones_libreria ADD COLUMN nuevo_artista VARCHAR(255) DEFAULT NULL")
+        except: pass
+        try: cursor.execute("ALTER TABLE canciones_libreria ADD COLUMN last_checked TIMESTAMP NULL DEFAULT NULL")
         except: pass
         
         conn.commit()
@@ -189,6 +201,168 @@ def star_song_in_navidrome(song_id):
         return res.status_code == 200
     except:
         return False
+
+def get_navidrome_song(song_id):
+    """Comprueba si un ID específico existe y sigue vivo en Navidrome. Devuelve song o None."""
+    if not song_id:
+        return None
+    params = get_navidrome_params({'id': song_id})
+    try:
+        res = requests.get(f"{NAVIDROME_URL}/rest/getSong.view", params=params, timeout=8)
+        if res.status_code == 200:
+            sub = res.json().get('subsonic-response', {})
+            if sub.get('status') == 'ok' and 'song' in sub:
+                return sub.get('song')
+    except Exception as e:
+        print(f"Error comprobando cancion {song_id} en Navidrome: {e}")
+    return None
+
+def find_song_in_navidrome(title, artist):
+    """Busca en Navidrome y devuelve (found, song_dict) con información de la pista encontrada"""
+    clean_query = f"{clean_text(artist)} {clean_text(title)}"
+    params = get_navidrome_params({'query': clean_query})
+    try:
+        response = requests.get(f"{NAVIDROME_URL}/rest/search3.view", params=params, timeout=10)
+        response.raise_for_status()
+        songs = response.json().get('subsonic-response', {}).get('searchResult3', {}).get('song', [])
+        for s in songs:
+            if is_same_song(title, artist, s.get('title', ''), s.get('artist', '')):
+                return True, s
+    except Exception as e:
+        print(f"Error Navidrome search: {e}")
+    return False, None
+
+def remove_song_from_playlist(playlist_id, song_id):
+    """Elimina una cancion de una playlist por su ID en Navidrome usando songIndexToRemove"""
+    if not playlist_id or not song_id:
+        return True
+    try:
+        params = get_navidrome_params({'id': playlist_id})
+        res = requests.get(f"{NAVIDROME_URL}/rest/getPlaylist.view", params=params, timeout=10)
+        tracks = res.json().get('subsonic-response', {}).get('playlist', {}).get('entry', [])
+        
+        # Encontrar los indices de las pistas que coincidan
+        matching_indices = [i for i, t in enumerate(tracks) if t.get('id') == song_id]
+        if not matching_indices:
+            return True
+            
+        # Eliminar en orden inverso de indice
+        for idx in sorted(matching_indices, reverse=True):
+            del_params = get_navidrome_params({'playlistId': playlist_id, 'songIndexToRemove': idx})
+            requests.get(f"{NAVIDROME_URL}/rest/updatePlaylist.view", params=del_params, timeout=10)
+            time.sleep(0.05)
+        return True
+    except Exception as e:
+        print(f"Error eliminando cancion {song_id} de playlist {playlist_id}: {e}")
+        return False
+
+def audit_single_song(row, playlist_tracks):
+    """Audita una cancion de canciones_libreria contra Navidrome"""
+    song_id = row['id']
+    nav_id = row.get('navidrome_id')
+    title = row['title']
+    artist = row['artist']
+    preview = row.get('preview_url')
+    was_in_playlist = bool(row.get('en_playlist'))
+    
+    # 1. Comprobar si el nav_id actual existe y sigue vivo en Navidrome
+    exists = False
+    if nav_id:
+        song_info = get_navidrome_song(nav_id)
+        if song_info:
+            exists = True
+            
+    if exists:
+        # Sigue existiendo en disco y con el mismo ID
+        in_playlist = nav_id in playlist_tracks
+        return {
+            'id': song_id,
+            'estado_archivo': 'ok',
+            'nuevo_navidrome_id': None,
+            'nuevo_titulo': None,
+            'nuevo_artista': None,
+            'en_playlist': in_playlist,
+            'preview_url': preview
+        }
+        
+    # 2. Si no existe o no tenia nav_id, buscamos si cambio de nombre o ID en Navidrome (Renombrada)
+    found, new_song = find_song_in_navidrome(title, artist)
+    if found and new_song:
+        new_id = new_song.get('id')
+        new_title = new_song.get('title')
+        new_artist = new_song.get('artist')
+        in_playlist = new_id in playlist_tracks
+        return {
+            'id': song_id,
+            'estado_archivo': 'renombrada',
+            'nuevo_navidrome_id': new_id,
+            'nuevo_titulo': new_title,
+            'nuevo_artista': new_artist,
+            'en_playlist': in_playlist or was_in_playlist,
+            'preview_url': preview
+        }
+    else:
+        # 3. Desaparecida totalmente de disco
+        if not preview:
+            preview = get_itunes_preview(title, artist)
+        return {
+            'id': song_id,
+            'estado_archivo': 'desaparecida',
+            'nuevo_navidrome_id': None,
+            'nuevo_titulo': None,
+            'nuevo_artista': None,
+            'en_playlist': was_in_playlist,
+            'preview_url': preview
+        }
+
+def audit_library():
+    """Ejecuta una auditoria completa de la libreria contra Navidrome"""
+    print("🔍 [Auditoría] Comprobando biblioteca contra Navidrome...")
+    try:
+        playlist_id = get_target_playlist_id()
+        playlist_tracks = get_playlist_track_ids(playlist_id) if playlist_id else set()
+        
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, title, artist, navidrome_id, en_playlist, preview_url FROM canciones_libreria")
+        songs = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        if not songs:
+            print("ℹ️ [Auditoría] No hay canciones en canciones_libreria.")
+            return
+            
+        results = []
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            futures = [executor.submit(audit_single_song, s, playlist_tracks) for s in songs]
+            for f in futures:
+                try:
+                    res = f.result()
+                    if res: results.append(res)
+                except Exception as ex:
+                    print(f"Error procesando hilo de auditoria: {ex}")
+                    
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        for r in results:
+            cursor.execute("""
+                UPDATE canciones_libreria 
+                SET estado_archivo = %s,
+                    nuevo_navidrome_id = %s,
+                    nuevo_titulo = %s,
+                    nuevo_artista = %s,
+                    en_playlist = %s,
+                    preview_url = COALESCE(%s, preview_url),
+                    last_checked = NOW()
+                WHERE id = %s
+            """, (r['estado_archivo'], r['nuevo_navidrome_id'], r['nuevo_titulo'], r['nuevo_artista'], r['en_playlist'], r['preview_url'], r['id']))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"✅ [Auditoría] Auditoría finalizada con éxito. Canciones analizadas: {len(results)}")
+    except Exception as e:
+        print(f"❌ [Auditoría] Error general en auditoria: {e}")
 
 # ----- LÓGICA DE MONITOREO -----
 def check_db_status(title, artist):
@@ -298,7 +472,11 @@ def radio_monitor_loop():
             sync_counter += 1
             if sync_counter >= 15: # 15 ciclos * 2 min = 30 minutos
                 sync_aceptadas_to_libreria()
-                sync_playlist_faltantes() # NUEVO: Chequeo automático en segundo plano
+                sync_playlist_faltantes()
+                
+            # Cada 30 ciclos (60 minutos), realizar una auditoría automática de la biblioteca
+            if sync_counter >= 30:
+                threading.Thread(target=audit_library, daemon=True).start()
                 sync_counter = 0
 
         except Exception as e:
@@ -327,9 +505,19 @@ def index():
     cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE en_playlist = FALSE AND ignorar_playlist = FALSE")
     count_sin_playlist = cursor.fetchone()['c']
     
+    cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE estado_archivo != 'ok'")
+    count_rotas = cursor.fetchone()['c']
+    
+    cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE estado_archivo = 'renombrada'")
+    count_renombradas = cursor.fetchone()['c']
+    
+    cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE estado_archivo = 'desaparecida'")
+    count_desaparecidas = cursor.fetchone()['c']
+    
     # Obtener los datos de la pestaña actual paginados
     data = []
     total_items = 0
+    filtro = request.args.get('filtro', 'todas')
     
     if tab == 'pendientes':
         total_items = count_pendientes
@@ -343,6 +531,20 @@ def index():
         total_items = count_sin_playlist
         cursor.execute("SELECT * FROM canciones_libreria WHERE en_playlist = FALSE AND ignorar_playlist = FALSE ORDER BY added_at DESC LIMIT %s OFFSET %s", (per_page, offset))
         data = cursor.fetchall()
+    elif tab == 'rotas':
+        if filtro == 'desaparecidas':
+            cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE estado_archivo = 'desaparecida'")
+            total_items = cursor.fetchone()['c']
+            cursor.execute("SELECT * FROM canciones_libreria WHERE estado_archivo = 'desaparecida' ORDER BY en_playlist DESC, id DESC LIMIT %s OFFSET %s", (per_page, offset))
+        elif filtro == 'renombradas':
+            cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE estado_archivo = 'renombrada'")
+            total_items = cursor.fetchone()['c']
+            cursor.execute("SELECT * FROM canciones_libreria WHERE estado_archivo = 'renombrada' ORDER BY id DESC LIMIT %s OFFSET %s", (per_page, offset))
+        else:
+            cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE estado_archivo != 'ok'")
+            total_items = cursor.fetchone()['c']
+            cursor.execute("SELECT * FROM canciones_libreria WHERE estado_archivo != 'ok' ORDER BY FIELD(estado_archivo, 'renombrada', 'desaparecida'), en_playlist DESC, id DESC LIMIT %s OFFSET %s", (per_page, offset))
+        data = cursor.fetchall()
         
     conn.close()
     
@@ -353,7 +555,15 @@ def index():
                            tab=tab, 
                            page=page, 
                            total_pages=total_pages,
-                           counts={'pendientes': count_pendientes, 'descargar': count_aceptadas, 'playlist': count_sin_playlist})
+                           filtro=filtro,
+                           counts={
+                               'pendientes': count_pendientes, 
+                               'descargar': count_aceptadas, 
+                               'playlist': count_sin_playlist,
+                               'rotas': count_rotas,
+                               'renombradas': count_renombradas,
+                               'desaparecidas': count_desaparecidas
+                           })
 
 def sync_playlist_faltantes():
     try:
@@ -636,12 +846,205 @@ def add_to_navidrome_playlist_route(db_id):
     if request.args.get('ajax'): return ajax_response(success)
     return redirect(url_for('index', tab='playlist'))
 
+@app.route('/run_audit')
+def run_audit():
+    audit_library()
+    return redirect(url_for('index', tab='rotas'))
+
+@app.route('/fix_renamed/<int:db_id>')
+def fix_renamed(db_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, title, artist, navidrome_id, nuevo_navidrome_id, nuevo_titulo, nuevo_artista, en_playlist FROM canciones_libreria WHERE id = %s", (db_id,))
+        row = cursor.fetchone()
+        
+        if row and row['nuevo_navidrome_id']:
+            new_id = row['nuevo_navidrome_id']
+            old_id = row['navidrome_id']
+            playlist_id = get_target_playlist_id()
+            
+            # Si estaba en playlist o debía estar, actualizamos en Navidrome
+            if row['en_playlist'] and playlist_id:
+                if old_id:
+                    remove_song_from_playlist(playlist_id, old_id)
+                add_song_to_playlist(playlist_id, new_id)
+                star_song_in_navidrome(new_id)
+            
+            new_title = row['nuevo_titulo'] or row['title']
+            new_artist = row['nuevo_artista'] or row['artist']
+            
+            cursor.execute("""
+                UPDATE canciones_libreria 
+                SET navidrome_id = %s,
+                    title = %s,
+                    artist = %s,
+                    estado_archivo = 'ok',
+                    nuevo_navidrome_id = NULL,
+                    nuevo_titulo = NULL,
+                    nuevo_artista = NULL
+                WHERE id = %s
+            """, (new_id, new_title, new_artist, db_id))
+            conn.commit()
+            
+        conn.close()
+        if request.args.get('ajax'): return ajax_response(True)
+    except Exception as e:
+        print(f"Error reparando canción renombrada: {e}")
+        if request.args.get('ajax'): return jsonify({"success": False, "message": str(e)})
+    return redirect(url_for('index', tab='rotas'))
+
+@app.route('/fix_all_renamed')
+def fix_all_renamed():
+    count_repaired = 0
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, title, artist, navidrome_id, nuevo_navidrome_id, nuevo_titulo, nuevo_artista, en_playlist FROM canciones_libreria WHERE estado_archivo = 'renombrada'")
+        rows = cursor.fetchall()
+        playlist_id = get_target_playlist_id()
+        
+        for row in rows:
+            if row['nuevo_navidrome_id']:
+                new_id = row['nuevo_navidrome_id']
+                old_id = row['navidrome_id']
+                if row['en_playlist'] and playlist_id:
+                    if old_id:
+                        remove_song_from_playlist(playlist_id, old_id)
+                    add_song_to_playlist(playlist_id, new_id)
+                    star_song_in_navidrome(new_id)
+                
+                new_title = row['nuevo_titulo'] or row['title']
+                new_artist = row['nuevo_artista'] or row['artist']
+                cursor.execute("""
+                    UPDATE canciones_libreria 
+                    SET navidrome_id = %s, title = %s, artist = %s, estado_archivo = 'ok',
+                        nuevo_navidrome_id = NULL, nuevo_titulo = NULL, nuevo_artista = NULL
+                    WHERE id = %s
+                """, (new_id, new_title, new_artist, row['id']))
+                count_repaired += 1
+                
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error reparando todas: {e}")
+    return redirect(url_for('index', tab='rotas'))
+
+@app.route('/remove_from_playlist/<int:db_id>')
+def remove_from_playlist_route(db_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, navidrome_id, nuevo_navidrome_id FROM canciones_libreria WHERE id = %s", (db_id,))
+        row = cursor.fetchone()
+        if row:
+            playlist_id = get_target_playlist_id()
+            if playlist_id:
+                if row['navidrome_id']:
+                    remove_song_from_playlist(playlist_id, row['navidrome_id'])
+                if row['nuevo_navidrome_id']:
+                    remove_song_from_playlist(playlist_id, row['nuevo_navidrome_id'])
+            
+            cursor.execute("UPDATE canciones_libreria SET en_playlist = FALSE WHERE id = %s", (db_id,))
+            conn.commit()
+        conn.close()
+        if request.args.get('ajax'): return ajax_response(True)
+    except Exception as e:
+        print(f"Error quitando de playlist: {e}")
+        if request.args.get('ajax'): return jsonify({"success": False, "message": str(e)})
+    return redirect(url_for('index', tab='rotas'))
+
+@app.route('/clean_all_orphans_playlist')
+def clean_all_orphans_playlist():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, navidrome_id FROM canciones_libreria WHERE estado_archivo = 'desaparecida' AND en_playlist = TRUE")
+        rows = cursor.fetchall()
+        playlist_id = get_target_playlist_id()
+        for r in rows:
+            if playlist_id and r['navidrome_id']:
+                remove_song_from_playlist(playlist_id, r['navidrome_id'])
+            cursor.execute("UPDATE canciones_libreria SET en_playlist = FALSE WHERE id = %s", (r['id'],))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error limpiando huérfanas de playlist: {e}")
+    return redirect(url_for('index', tab='rotas'))
+
+@app.route('/delete_libreria/<int:db_id>')
+def delete_libreria(db_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, navidrome_id, en_playlist FROM canciones_libreria WHERE id = %s", (db_id,))
+        row = cursor.fetchone()
+        if row:
+            if row['en_playlist'] and row['navidrome_id']:
+                playlist_id = get_target_playlist_id()
+                if playlist_id:
+                    remove_song_from_playlist(playlist_id, row['navidrome_id'])
+            cursor.execute("DELETE FROM canciones_libreria WHERE id = %s", (db_id,))
+            conn.commit()
+        conn.close()
+        if request.args.get('ajax'): return ajax_response(True)
+    except Exception as e:
+        print(f"Error borrando de BD: {e}")
+        if request.args.get('ajax'): return jsonify({"success": False, "message": str(e)})
+    return redirect(url_for('index', tab='rotas'))
+
+@app.route('/redownload_song/<int:db_id>', methods=['GET', 'POST'])
+def redownload_song(db_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, title, artist, navidrome_id, preview_url, en_playlist FROM canciones_libreria WHERE id = %s", (db_id,))
+        row = cursor.fetchone()
+        
+        if row:
+            target_artist = request.form.get('artist') or row['artist']
+            target_title = request.form.get('title') or row['title']
+            
+            # Quitar de playlist en Navidrome si estaba
+            playlist_id = get_target_playlist_id()
+            if playlist_id and row['navidrome_id'] and row['en_playlist']:
+                remove_song_from_playlist(playlist_id, row['navidrome_id'])
+            
+            # Borrar de canciones_libreria
+            cursor.execute("DELETE FROM canciones_libreria WHERE id = %s", (db_id,))
+            
+            # Insertar en canciones_descubiertas como 'aceptada'
+            preview = row['preview_url'] or get_itunes_preview(target_title, target_artist)
+            cursor.execute("""
+                INSERT INTO canciones_descubiertas (artist, title, station, estado, preview_url, lidarr_status)
+                VALUES (%s, %s, 'Re-descarga', 'aceptada', %s, 'enviado')
+                ON DUPLICATE KEY UPDATE estado = 'aceptada', lidarr_status = 'enviado', preview_url = VALUES(preview_url)
+            """, (target_artist, target_title, preview))
+            conn.commit()
+            conn.close()
+            
+            # Lanzar petición a Lidarr
+            success, msg = request_lidarr_song(target_artist, target_title)
+            
+            if request.args.get('ajax'):
+                return jsonify({"success": True, "message": f"Enviada a Lidarr: {msg}"})
+            return redirect(url_for('index', tab='descargar'))
+            
+        conn.close()
+    except Exception as e:
+        print(f"Error re-descargando canción: {e}")
+        if request.args.get('ajax'): return jsonify({"success": False, "message": str(e)})
+    return redirect(url_for('index', tab='rotas'))
+
 if __name__ == '__main__':
     init_db()
     
     # Iniciar monitor en un hilo
     monitor_thread = threading.Thread(target=radio_monitor_loop, daemon=True)
     monitor_thread.start()
+    
+    # Iniciar auditoría inicial en segundo plano
+    threading.Thread(target=audit_library, daemon=True).start()
     
     # Iniciar Flask en el hilo principal
     print("Iniciando servidor web en http://0.0.0.0:5000")
