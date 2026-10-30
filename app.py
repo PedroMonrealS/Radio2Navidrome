@@ -51,6 +51,20 @@ def get_db_connection():
         host=MYSQL_HOST, user=MYSQL_USER, password=MYSQL_PASS, database=MYSQL_DB
     )
 
+# ================= CONFIGURACIÓN STATS & HISTORIAL =================
+STATS_DB_HOST = os.environ.get("STATS_DB_HOST", "192.168.100.203")
+STATS_DB_USER = os.environ.get("STATS_DB_USER", "n8n")
+STATS_DB_PASS = os.environ.get("STATS_DB_PASS", "gI1_lKF5Pq8K[old")
+STATS_DB_NAME = os.environ.get("STATS_DB_NAME", "spotify_db")
+
+def get_stats_db_connection():
+    return mysql.connector.connect(
+        host=STATS_DB_HOST,
+        user=STATS_DB_USER,
+        password=STATS_DB_PASS,
+        database=STATS_DB_NAME
+    )
+
 def init_db():
     try:
         conn = get_db_connection()
@@ -1035,6 +1049,183 @@ def redownload_song(db_id):
         print(f"Error re-descargando canción: {e}")
         if request.args.get('ajax'): return jsonify({"success": False, "message": str(e)})
     return redirect(url_for('index', tab='rotas'))
+
+# ================= STATS & HISTORIAL API ROUTES =================
+@app.route('/api/stats')
+def api_stats():
+    range_val = request.args.get('range', 'all')
+    where_clause = ""
+    if range_val and range_val != 'all':
+        interval_map = {'today': '1 DAY', 'week': '1 WEEK', 'month': '1 MONTH', 'year': '1 YEAR'}
+        interval = interval_map.get(range_val, '1 YEAR')
+        where_clause = f"WHERE reproducido_en >= DATE_SUB(NOW(), INTERVAL {interval})"
+
+    try:
+        conn = get_stats_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(f"""
+            SELECT 
+                (SELECT COUNT(*) FROM canciones) as songs_count,
+                (SELECT COUNT(*) FROM autores) as artists_count,
+                (SELECT COUNT(*) FROM escuchas {where_clause}) as listens_count
+        """)
+        stats = cursor.fetchone() or {}
+        conn.close()
+        return jsonify({
+            "songs_count": int(stats.get('songs_count', 0)),
+            "artists_count": int(stats.get('artists_count', 0)),
+            "listens_count": int(stats.get('listens_count', 0))
+        })
+    except Exception as e:
+        print(f"Error api_stats: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/top-artists')
+def api_top_artists():
+    range_val = request.args.get('range', 'all')
+    where_clause = ""
+    if range_val and range_val != 'all':
+        interval_map = {'today': '1 DAY', 'week': '1 WEEK', 'month': '1 MONTH', 'year': '1 YEAR'}
+        interval = interval_map.get(range_val, '1 YEAR')
+        where_clause = f"AND e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {interval})"
+
+    try:
+        conn = get_stats_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(f"""
+            SELECT 
+                a.nombre,
+                COUNT(e.id) as total_reproducciones,
+                MAX(c.imagen_url) as imagen_url
+            FROM autores a
+            JOIN cancion_autor ca ON a.spotify_id = ca.autor_id
+            JOIN canciones c ON ca.cancion_id = c.spotify_id
+            JOIN escuchas e ON c.spotify_id = e.spotify_id_cancion
+            WHERE 1=1 {where_clause}
+            GROUP BY a.spotify_id, a.nombre
+            ORDER BY total_reproducciones DESC
+            LIMIT 15;
+        """)
+        rows = cursor.fetchall()
+        for r in rows:
+            if r.get('reproducido_en'):
+                r['reproducido_en'] = r['reproducido_en'].isoformat()
+        conn.close()
+        return jsonify(rows)
+    except Exception as e:
+        print(f"Error api_top_artists: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/top-albums')
+def api_top_albums():
+    range_val = request.args.get('range', 'all')
+    where_clause = ""
+    if range_val and range_val != 'all':
+        interval_map = {'today': '1 DAY', 'week': '1 WEEK', 'month': '1 MONTH', 'year': '1 YEAR'}
+        interval = interval_map.get(range_val, '1 YEAR')
+        where_clause = f"AND e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {interval})"
+
+    try:
+        conn = get_stats_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(f"""
+            SELECT 
+                c.album_nombre,
+                MAX(c.imagen_url) as imagen_url,
+                COUNT(e.id) as total_reproducciones,
+                MAX(a.nombre) as artista_principal
+            FROM canciones c
+            JOIN escuchas e ON c.spotify_id = e.spotify_id_cancion
+            JOIN cancion_autor ca ON c.spotify_id = ca.cancion_id
+            JOIN autores a ON ca.autor_id = a.spotify_id
+            WHERE 1=1 {where_clause}
+            GROUP BY c.album_nombre
+            ORDER BY total_reproducciones DESC
+            LIMIT 10;
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        return jsonify(rows)
+    except Exception as e:
+        print(f"Error api_top_albums: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/songs')
+def api_songs():
+    range_val = request.args.get('range', 'all')
+    join_condition = ""
+    if range_val and range_val != 'all':
+        interval_map = {'today': '1 DAY', 'week': '1 WEEK', 'month': '1 MONTH', 'year': '1 YEAR'}
+        interval = interval_map.get(range_val, '1 YEAR')
+        join_condition = f"AND CAST(e.reproducido_en AS DATETIME) >= DATE_SUB(NOW(), INTERVAL {interval})"
+
+    try:
+        conn = get_stats_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(f"""
+            SELECT 
+                c.spotify_id,
+                c.nombre AS nombre_cancion,
+                c.album_nombre,
+                c.imagen_url,
+                GROUP_CONCAT(DISTINCT a.nombre SEPARATOR ', ') AS artistas,
+                COUNT(e.id) AS total_reproducciones
+            FROM canciones c
+            LEFT JOIN cancion_autor ca ON c.spotify_id = ca.cancion_id
+            LEFT JOIN autores a ON ca.autor_id = a.spotify_id
+            LEFT JOIN escuchas e ON c.spotify_id = e.spotify_id_cancion {join_condition}
+            GROUP BY c.spotify_id, c.nombre, c.album_nombre, c.imagen_url
+            ORDER BY total_reproducciones DESC;
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        return jsonify(rows)
+    except Exception as e:
+        print(f"Error api_songs: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/history')
+def api_history():
+    try:
+        limit = min(max(int(request.args.get('limit', 50)), 1), 200)
+        offset = max(int(request.args.get('offset', 0)), 0)
+        search = request.args.get('search', '').strip()
+
+        search_condition = ""
+        params = []
+        if search:
+            search_condition = "AND (c.nombre LIKE %s OR a.nombre LIKE %s OR c.album_nombre LIKE %s)"
+            wildcard = f"%{search}%"
+            params.extend([wildcard, wildcard, wildcard])
+
+        params.extend([limit, offset])
+
+        conn = get_stats_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(f"""
+            SELECT 
+                e.id,
+                e.reproducido_en,
+                c.spotify_id,
+                c.nombre AS cancion,
+                c.album_nombre,
+                c.imagen_url,
+                GROUP_CONCAT(DISTINCT a.nombre SEPARATOR ', ') AS artistas
+            FROM escuchas e
+            LEFT JOIN canciones c ON e.spotify_id_cancion = c.spotify_id
+            LEFT JOIN cancion_autor ca ON c.spotify_id = ca.cancion_id
+            LEFT JOIN autores a ON ca.autor_id = a.spotify_id
+            WHERE 1=1 {search_condition}
+            GROUP BY e.id, e.reproducido_en, c.spotify_id, c.nombre, c.album_nombre, c.imagen_url
+            ORDER BY e.reproducido_en DESC, e.id DESC
+            LIMIT %s OFFSET %s;
+        """, tuple(params))
+        rows = cursor.fetchall()
+        conn.close()
+        return jsonify(rows)
+    except Exception as e:
+        print(f"Error api_history: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     init_db()

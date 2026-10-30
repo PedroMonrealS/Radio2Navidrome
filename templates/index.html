@@ -91,11 +91,116 @@
                 });
         }
     </script>
+
+    <!-- Chart.js para estadísticas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Master Navigation Bar */
+        .master-nav-bar {
+            max-width: 1000px;
+            margin: 0 auto 25px auto;
+            display: flex;
+            justify-content: center;
+        }
+        .master-nav-pill {
+            background: #e2e8f0;
+            padding: 5px;
+            border-radius: 30px;
+            display: inline-flex;
+            gap: 5px;
+        }
+        .master-nav-btn {
+            padding: 9px 22px;
+            border-radius: 25px;
+            border: none;
+            background: transparent;
+            font-size: 0.95em;
+            font-weight: bold;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .master-nav-btn.active {
+            background: #007BFF;
+            color: white !important;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+        }
+        .master-nav-btn:hover:not(.active) {
+            background: #cbd5e1;
+            color: #1e293b;
+        }
+
+        /* Stats Filter Buttons */
+        .stats-filter-btn {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 5px 14px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .stats-filter-btn.active {
+            background: #007BFF;
+            color: white;
+            border-color: #007BFF;
+        }
+        .stats-filter-btn:hover:not(.active) {
+            background: #e2e8f0;
+        }
+
+        /* History Feed Item */
+        .hist-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+        .hist-item:hover {
+            background: #f1f5f9;
+            border-color: #007BFF;
+            transform: translateX(4px);
+        }
+        .hist-cover {
+            width: 52px;
+            height: 52px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-right: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+    </style>
+
 </head>
 <body>
     <h1>📻 Monitor de Radio & Navidrome</h1>
     
-    <div class="container">
+    
+    <!-- Barra de Navegación Principal Unificada -->
+    <div class="master-nav-bar">
+        <div class="master-nav-pill">
+            <button class="master-nav-btn active" onclick="switchMasterNav('radio', this)">
+                📻 Monitor de Radio
+            </button>
+            <button class="master-nav-btn" onclick="switchMasterNav('stats', this)">
+                📊 Estadísticas de Música
+            </button>
+            <button class="master-nav-btn" onclick="switchMasterNav('history', this)">
+                🕒 Historial Lineal
+            </button>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: MONITOR DE RADIO -->
+    <div id="secRadio">
+        <div class="container">
         
         <div class="tabs">
             <a href="/?tab=pendientes" class="tab-btn {% if tab == 'pendientes' %}active{% endif %}">📝 Pendientes ({{ counts.pendientes }})</a>
@@ -246,6 +351,339 @@
 
     </div>
     
+        </div><!-- Cierre de secRadio -->
+
+
+    <!-- SECCIÓN: ESTADÍSTICAS DE MÚSICA -->
+    <div id="secStats" style="display: none; max-width: 1100px; margin: 0 auto;">
+        <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px;">
+            <!-- Period Selector Bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-weight: bold; color: #555; margin-right: 5px;">Periodo:</span>
+                    <button class="stats-filter-btn" onclick="changeStatsPeriod('all', this)">Todo</button>
+                    <button class="stats-filter-btn active" onclick="changeStatsPeriod('today', this)">Hoy</button>
+                    <button class="stats-filter-btn" onclick="changeStatsPeriod('week', this)">Semana</button>
+                    <button class="stats-filter-btn" onclick="changeStatsPeriod('month', this)">Mes</button>
+                    <button class="stats-filter-btn" onclick="changeStatsPeriod('year', this)">Año</button>
+                </div>
+                <div id="statsLastUpdated" style="font-size: 0.85em; color: #777;">
+                    🔄 Actualizado en vivo
+                </div>
+            </div>
+
+            <!-- Summary Counters -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 25px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 48px; height: 48px; border-radius: 10px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">🎵</div>
+                    <div>
+                        <div style="font-size: 0.78em; text-transform: uppercase; font-weight: bold; color: #64748b;">Total Canciones</div>
+                        <div id="statSongsCount" style="font-size: 1.7em; font-weight: bold; color: #0f172a;">-</div>
+                    </div>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 48px; height: 48px; border-radius: 10px; background: #f3e8ff; color: #9333ea; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">👥</div>
+                    <div>
+                        <div style="font-size: 0.78em; text-transform: uppercase; font-weight: bold; color: #64748b;">Artistas</div>
+                        <div id="statArtistsCount" style="font-size: 1.7em; font-weight: bold; color: #0f172a;">-</div>
+                    </div>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 48px; height: 48px; border-radius: 10px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">🎧</div>
+                    <div>
+                        <div id="statListensLabel" style="font-size: 0.78em; text-transform: uppercase; font-weight: bold; color: #64748b;">Escuchas de Hoy</div>
+                        <div id="statListensCount" style="font-size: 1.7em; font-weight: bold; color: #16a34a;">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts & Top Albums Row -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <!-- Pie Chart -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px;">
+                    <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.05em; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                        📊 Distribución de Escuchas
+                    </h3>
+                    <div style="height: 260px; position: relative;">
+                        <canvas id="listensPieChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top Albums -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px;">
+                    <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.05em; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                        💿 Álbumes Más Escuchados
+                    </h3>
+                    <div id="topAlbumsContainer" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px;">
+                        <div style="color: #64748b; padding: 20px;">Cargando álbumes...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Artists -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px;">
+                <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.05em; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                    ⭐ Artistas Más Escuchados
+                </h3>
+                <div id="topArtistsContainer" style="display: flex; gap: 20px; overflow-x: auto; padding-bottom: 10px;">
+                    <div style="color: #64748b; padding: 15px;">Cargando artistas...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: HISTORIAL LINEAL EN VIVO -->
+    <div id="secHistory" style="display: none; max-width: 1000px; margin: 0 auto;">
+        <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h2 style="margin: 0; font-size: 1.3em; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                        🕒 Historial Cronológico de Escuchas
+                    </h2>
+                    <small style="color: #64748b;">Registro en tiempo real sincronizado con Navidrome</small>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="historySearchInput" placeholder="Filtrar por canción o artista..." style="padding: 7px 14px; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 0.9em; outline: none; width: 220px;" oninput="filterHistoryList(this.value)">
+                    <button class="btn btn-info" onclick="loadLiveHistory(true)">🔄 Refrescar</button>
+                </div>
+            </div>
+
+            <div id="historyFeedList" style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="text-align: center; color: #64748b; padding: 40px;">Cargando historial...</div>
+            </div>
+
+            <div style="text-align: center; margin-top: 25px;">
+                <button id="btnLoadMoreHist" class="btn btn-info" style="padding: 10px 25px; font-weight: bold; border-radius: 25px;" onclick="loadMoreLiveHistory()">
+                    ➕ Cargar Más Escuchas
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+        // Master Navigation Switching
+        function switchMasterNav(section, btn) {
+            document.querySelectorAll('.master-nav-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            document.getElementById('secRadio').style.display = (section === 'radio') ? 'block' : 'none';
+            document.getElementById('secStats').style.display = (section === 'stats') ? 'block' : 'none';
+            document.getElementById('secHistory').style.display = (section === 'history') ? 'block' : 'none';
+
+            if (section === 'stats') {
+                loadStatsDashboard();
+            } else if (section === 'history') {
+                loadLiveHistory(true);
+            }
+        }
+
+        // Stats Dashboard Logic
+        let statsPeriod = 'today';
+        let statsPieChart = null;
+
+        function changeStatsPeriod(period, btn) {
+            statsPeriod = period;
+            document.querySelectorAll('.stats-filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const labels = {
+                'today': 'Escuchas de Hoy',
+                'week': 'Escuchas de la Semana',
+                'month': 'Escuchas del Mes',
+                'year': 'Escuchas del Año',
+                'all': 'Escuchas Totales'
+            };
+            document.getElementById('statListensLabel').innerText = labels[period] || 'Escuchas';
+            loadStatsDashboard();
+        }
+
+        async function loadStatsDashboard() {
+            try {
+                // 1. Counters
+                const resStats = await fetch('/api/stats?range=' + statsPeriod);
+                const dataStats = await resStats.json();
+                document.getElementById('statSongsCount').innerText = Number(dataStats.songs_count || 0).toLocaleString();
+                document.getElementById('statArtistsCount').innerText = Number(dataStats.artists_count || 0).toLocaleString();
+                document.getElementById('statListensCount').innerText = Number(dataStats.listens_count || 0).toLocaleString();
+                document.getElementById('statsLastUpdated').innerText = '🔄 Actualizado a las ' + new Date().toLocaleTimeString();
+
+                // 2. Top Albums
+                const resAlbums = await fetch('/api/top-albums?range=' + statsPeriod);
+                const albums = await resAlbums.json();
+                const albContainer = document.getElementById('topAlbumsContainer');
+                if (!albums || albums.length === 0) {
+                    albContainer.innerHTML = '<div style="color: #64748b; padding: 20px;">Sin reproducciones en este periodo.</div>';
+                } else {
+                    albContainer.innerHTML = albums.map(a => `
+                        <div style="min-width: 120px; max-width: 120px; text-align: center;">
+                            <div style="position: relative; margin-bottom: 6px;">
+                                <img src="${a.imagen_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200'}" 
+                                     style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);"
+                                     onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200'">
+                                <span style="position: absolute; top: 4px; left: 4px; background: #dc3545; color: white; border-radius: 12px; padding: 2px 7px; font-size: 0.75em; font-weight: bold;">
+                                    ${a.total_reproducciones}
+                                </span>
+                            </div>
+                            <div style="font-weight: bold; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${a.album_nombre}">${a.album_nombre}</div>
+                            <div style="font-size: 0.75em; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${a.artista_principal || ''}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // 3. Top Artists
+                const resArtists = await fetch('/api/top-artists?range=' + statsPeriod);
+                const artists = await resArtists.json();
+                const artContainer = document.getElementById('topArtistsContainer');
+                if (!artists || artists.length === 0) {
+                    artContainer.innerHTML = '<div style="color: #64748b; padding: 15px;">Sin escuchas en este periodo.</div>';
+                    renderStatsChart([]);
+                } else {
+                    artContainer.innerHTML = artists.map(art => `
+                        <div style="min-width: 80px; max-width: 80px; text-align: center;">
+                            <div style="position: relative; display: inline-block; margin-bottom: 6px;">
+                                <img src="${art.imagen_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200'}" 
+                                     style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #007BFF; box-shadow: 0 2px 8px rgba(0,0,0,0.15);"
+                                     onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200'">
+                                <span style="position: absolute; bottom: 0; right: 0; background: #007BFF; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.72em; font-weight: bold;">
+                                    ${art.total_reproducciones}
+                                </span>
+                            </div>
+                            <div style="font-weight: bold; font-size: 0.8em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${art.nombre}">${art.nombre}</div>
+                        </div>
+                    `).join('');
+                    renderStatsChart(artists);
+                }
+            } catch (e) {
+                console.error("Error cargando dashboard:", e);
+            }
+        }
+
+        function renderStatsChart(artists) {
+            const ctx = document.getElementById('listensPieChart').getContext('2d');
+            const top5 = artists.slice(0, 5);
+            const labels = top5.map(a => a.nombre);
+            const dataVals = top5.map(a => a.total_reproducciones);
+            const colors = ['#007BFF', '#6f42c1', '#e83e8c', '#fd7e14', '#28a745', '#17a2b8'];
+
+            if (statsPieChart) statsPieChart.destroy();
+            if (dataVals.length === 0) return;
+
+            statsPieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataVals,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        // Live History Logic
+        let histOffset = 0;
+        const HIST_LIMIT = 30;
+        let allHistoryItems = [];
+
+        async function loadLiveHistory(reset = false) {
+            if (reset) {
+                histOffset = 0;
+                allHistoryItems = [];
+            }
+            const container = document.getElementById('historyFeedList');
+            const searchVal = document.getElementById('historySearchInput').value.trim();
+
+            try {
+                const res = await fetch(`/api/history?limit=${HIST_LIMIT}&offset=${histOffset}&search=${encodeURIComponent(searchVal)}`);
+                const items = await res.json();
+
+                if (reset) container.innerHTML = '';
+                if (!items || items.length === 0) {
+                    if (reset) container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">No se encontraron reproducciones.</div>';
+                    document.getElementById('btnLoadMoreHist').style.display = 'none';
+                    return;
+                }
+
+                allHistoryItems = allHistoryItems.concat(items);
+
+                const html = items.map(item => {
+                    const dateObj = new Date(item.reproducido_en);
+                    const rel = formatRelativeTime(dateObj);
+                    const formatted = dateObj.toLocaleDateString('es-ES', { 
+                        weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
+                    });
+
+                    return `
+                        <div class="hist-item">
+                            <img src="${item.imagen_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100'}" 
+                                 class="hist-cover" 
+                                 onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100'">
+                            <div style="flex-grow: 1; min-width: 0; margin-right: 15px;">
+                                <div style="font-weight: bold; color: #1e293b; font-size: 1.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    ${item.cancion || 'Canción Desconocida'}
+                                </div>
+                                <div style="color: #007BFF; font-size: 0.9em; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    ${item.artistas || 'Artista Desconocido'}
+                                </div>
+                                <div style="color: #64748b; font-size: 0.8em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    ${item.album_nombre || ''}
+                                </div>
+                            </div>
+                            <div style="text-align: right; flex-shrink: 0;">
+                                <span style="background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 12px; font-size: 0.78em; font-weight: bold; display: inline-block; margin-bottom: 4px;">
+                                    ${rel}
+                                </span>
+                                <div style="color: #64748b; font-size: 0.75em;">${formatted}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.insertAdjacentHTML('beforeend', html);
+                document.getElementById('btnLoadMoreHist').style.display = (items.length >= HIST_LIMIT) ? 'inline-block' : 'none';
+            } catch (e) {
+                console.error("Error al cargar historial:", e);
+                if (reset) container.innerHTML = '<div style="color: #dc3545; padding: 20px; text-align: center;">Error al cargar historial.</div>';
+            }
+        }
+
+        function loadMoreLiveHistory() {
+            histOffset += HIST_LIMIT;
+            loadLiveHistory(false);
+        }
+
+        function formatRelativeTime(date) {
+            const now = new Date();
+            const diffSec = Math.floor((now - date) / 1000);
+            if (diffSec < 60) return "Justo ahora";
+            const diffMin = Math.floor(diffSec / 60);
+            if (diffMin < 60) return `Hace ${diffMin} min`;
+            const diffHours = Math.floor(diffMin / 60);
+            if (diffHours < 24) return `Hace ${diffHours} h`;
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays === 1) return "Ayer";
+            if (diffDays < 7) return `Hace ${diffDays} días`;
+            return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        }
+
+        function filterHistoryList(val) {
+            loadLiveHistory(true);
+        }
+    </script>
+
+
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             document.querySelectorAll('.status-badge').forEach(badge => {
