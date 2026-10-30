@@ -9,7 +9,12 @@ from services.navidrome import (
     remove_song_from_playlist,
     star_song_in_navidrome
 )
-from services.lidarr import request_lidarr_song, get_live_download_status
+from services.lidarr import (
+    request_lidarr_song,
+    get_live_download_status,
+    start_batch_request_lidarr,
+    get_lidarr_batch_status
+)
 from services.auditor import (
     audit_library,
     sync_aceptadas_to_libreria,
@@ -164,6 +169,17 @@ def send_lidarr(song_id):
     if request.args.get('ajax'):
         return jsonify({"success": False, "message": "Error interno"})
     return redirect(url_for('.index', tab='descargar'))
+
+@radio_bp.route('/send_all_lidarr', methods=['GET', 'POST'])
+def send_all_lidarr():
+    success, msg = start_batch_request_lidarr()
+    if request.args.get('ajax') or request.method == 'POST':
+        return jsonify({"success": success, "message": msg})
+    return redirect(url_for('.index', tab='descargar'))
+
+@radio_bp.route('/send_all_lidarr_status')
+def send_all_lidarr_status():
+    return jsonify(get_lidarr_batch_status())
 
 @radio_bp.route('/live_status/<int:song_id>')
 def live_status(song_id):

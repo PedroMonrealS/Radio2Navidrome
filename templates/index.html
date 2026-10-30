@@ -3,35 +3,1504 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radio Monitor & Navidrome</title>
+    <title>Monitor de Radio & Navidrome</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <!-- Bibliotecas para exportación de historias y GIF -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gifshot@0.3.2/dist/gifshot.min.js"></script>
+    <!-- Chart.js para estadísticas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        h1 { text-align: center; color: #333; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-        .tab-btn { padding: 10px 20px; text-decoration: none; border-radius: 4px 4px 0 0; color: #555; font-weight: bold; cursor: pointer; border: none; background: #eee; font-size: 1.1em; }
-        .tab-btn.active { background: #007BFF; color: white; }
-        ul { list-style: none; padding: 0; }
-        li { padding: 15px 10px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 10px; }
-        li:last-child { border-bottom: none; }
-        .song-info { display: flex; justify-content: space-between; align-items: center; }
-        .artist { font-weight: bold; color: #007BFF; }
-        .station { font-size: 0.8em; color: #888; display: block; }
-        .actions { display: flex; gap: 5px; }
-        .btn { padding: 6px 12px; text-decoration: none; border-radius: 4px; color: white; font-size: 0.9em; text-align: center; cursor: pointer; border: none; }
-        .btn-success { background: #28a745; }
-        .btn-danger { background: #dc3545; }
-        .btn-warning { background: #ffc107; color: #333; }
-        .btn-info { background: #17a2b8; }
-        .add-form { display: flex; gap: 10px; margin-bottom: 20px; }
-        .add-form input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .add-form button { padding: 8px 15px; background: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        audio { width: 100%; height: 35px; outline: none; }
-        .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
-        .page-link { padding: 8px 12px; background: #ddd; color: #333; text-decoration: none; border-radius: 4px; font-weight: bold; }
-        .page-link.active { background: #007BFF; color: white; }
-        .page-link:hover:not(.active) { background: #ccc; }
+        :root {
+            --bg-base: #0a0f1d;
+            --bg-surface: #121a2d;
+            --bg-card: #182238;
+            --bg-card-hover: #1f2c47;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(34, 197, 94, 0.4);
+            --accent-green: #22c55e;
+            --accent-green-hover: #16a34a;
+            --accent-cyan: #38bdf8;
+            --accent-purple: #a855f7;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 24px 20px 50px 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Scrollbar oscura personalizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #27354f;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b4e70;
+        }
+
+        .header-title-wrapper {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            font-size: 2.1em;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0;
+            background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Master Navigation Bar (Pills superiores) */
+        .master-nav-bar {
+            max-width: 1440px;
+            width: 95%;
+            margin: 0 auto 28px auto;
+            display: flex;
+            justify-content: center;
+        }
+        .master-nav-pill {
+            background: rgba(24, 34, 56, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 6px;
+            border-radius: 35px;
+            display: inline-flex;
+            gap: 6px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
+        }
+        .master-nav-btn {
+            padding: 10px 24px;
+            border-radius: 30px;
+            border: none;
+            background: transparent;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .master-nav-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+        }
+        .master-nav-btn.active {
+            background: var(--accent-green);
+            color: #0a0f1d !important;
+            font-weight: 700;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.35);
+        }
+
+        /* Contenedor Principal Amplio */
+        .main-wrapper {
+            max-width: 1440px;
+            width: 95%;
+            margin: 0 auto;
+        }
+
+        .container {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        /* Sub-pestañas de la sección de Radio */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 10px 18px;
+            text-decoration: none;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            font-size: 0.95em;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tab-btn:hover:not(.active) {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .tab-btn.active {
+            background: var(--accent-green);
+            color: #0a0f1d;
+            font-weight: 700;
+            border-color: var(--accent-green);
+            box-shadow: 0 0 16px rgba(34, 197, 94, 0.3);
+        }
+
+        /* Botones generales */
+        .btn {
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-success { background: linear-gradient(135deg, #22c55e, #16a34a); color: #0a0f1d; font-weight: 700; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0a0f1d; font-weight: 700; }
+        .btn-info { background: linear-gradient(135deg, #0284c7, #0369a1); color: white; }
+        .btn-secondary { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border-color); }
+
+        /* Banner de Modo Rápido */
+        .quick-mode-box {
+            background: rgba(24, 34, 56, 0.6);
+            border: 1px dashed rgba(56, 189, 248, 0.35);
+            padding: 14px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .quick-mode-box label {
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1em;
+            color: var(--accent-cyan);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Formularios e inputs oscuros */
+        .add-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 0;
+            flex-wrap: wrap;
+        }
+        .add-form input,
+        .dark-input {
+            background: #0d1527;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.95em;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .add-form input:focus,
+        .dark-input:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+        }
+        .add-form button {
+            padding: 10px 20px;
+            background: var(--accent-green);
+            color: #0a0f1d;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .add-form button:hover {
+            background: var(--accent-green-hover);
+            transform: translateY(-1px);
+        }
+
+        /* Lista de canciones */
+        ul.song-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        ul.song-list li {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+        ul.song-list li:hover {
+            border-color: var(--border-highlight);
+            background: var(--bg-card-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .song-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .artist {
+            font-weight: 700;
+            color: var(--accent-green);
+            font-size: 1.05em;
+        }
+        .title {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 1.05em;
+        }
+        .station {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            margin-top: 4px;
+            display: block;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Badges de estado */
+        .tag-renombrada {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.82em;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .tag-desaparecida {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.82em;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .tag-playlist {
+            background: rgba(168, 85, 247, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.82em;
+            font-weight: 600;
+            display: inline-block;
+            margin-left: 6px;
+        }
+
+        /* Reproductor de audio adaptado a modo oscuro */
+        audio {
+            width: 100%;
+            height: 36px;
+            outline: none;
+            filter: invert(0.9) hue-rotate(180deg);
+            border-radius: 18px;
+            opacity: 0.85;
+            transition: opacity 0.2s;
+        }
+        audio:hover {
+            opacity: 1;
+        }
+
+        /* Paginación oscura */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 28px;
+            flex-wrap: wrap;
+        }
+        .page-link {
+            padding: 9px 15px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        .page-link:hover:not(.active) {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .page-link.active {
+            background: var(--accent-green);
+            color: #0a0f1d;
+            border-color: var(--accent-green);
+            font-weight: 700;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.25);
+        }
+
+        /* Filtros de Estadísticas (Pills) */
+        .stats-filter-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.88em;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .stats-filter-btn:hover:not(.active) {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+        .stats-filter-btn.active {
+            background: var(--accent-green);
+            color: #0a0f1d;
+            border-color: var(--accent-green);
+            font-weight: 700;
+            box-shadow: 0 0 14px rgba(34, 197, 94, 0.25);
+        }
+
+        /* Items del Historial Lineal */
+        .hist-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+        .hist-item:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-highlight);
+            transform: translateX(4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+        .hist-cover {
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-right: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Top Albums & Artists en Stats */
+        .album-card {
+            min-width: 130px;
+            max-width: 130px;
+            text-align: center;
+            background: var(--bg-card);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+        .album-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-highlight);
+        }
+        .album-cover-wrap {
+            position: relative;
+            margin-bottom: 8px;
+        }
+        .album-cover-img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .album-play-badge {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: #ef4444;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 7px;
+            font-size: 0.72em;
+            font-weight: 800;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+
+        .artist-circle-wrap {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        .artist-circle-img {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent-green);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+        }
+        .artist-play-badge {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            background: var(--accent-green);
+            color: #0a0f1d;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72em;
+            font-weight: 800;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* ================= MUSIC WRAPPED ESTILOS ================= */
+        .wrapped-launch-banner {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(6, 78, 59, 0.4) 50%, rgba(18, 26, 45, 0.9) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            border-radius: 16px;
+            padding: 20px 26px;
+            margin-bottom: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        .wrapped-launch-banner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+            transform: skewX(-25deg);
+            animation: bannerShimmer 6s infinite;
+        }
+        @keyframes bannerShimmer {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
+        }
+        .wrapped-launch-banner:hover {
+            transform: translateY(-2px);
+            border-color: rgba(34, 197, 94, 0.8);
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.3);
+        }
+        .wrapped-launch-icon-box {
+            width: 58px;
+            height: 58px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            flex-shrink: 0;
+        }
+        .wrapped-pill-tag {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--accent-green);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.72em;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+        .btn-wrapped-trigger {
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            color: #0a0f1d;
+            font-weight: 800;
+            padding: 12px 24px;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95em;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.35);
+            transition: all 0.2s;
+        }
+        .btn-wrapped-trigger:hover {
+            transform: scale(1.04);
+            box-shadow: 0 6px 22px rgba(34, 197, 94, 0.5);
+        }
+
+        /* Modal Overlay a Pantalla Completa */
+        .wrapped-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 8, 16, 0.92);
+            backdrop-filter: blur(20px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            animation: modalFadeIn 0.3s ease;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Contenedor Vertical 9:16 (Historias de Instagram / Spotify) */
+        .wrapped-container {
+            width: min(420px, 94vw);
+            height: min(740px, 94vh);
+            aspect-ratio: 9/16;
+            border-radius: 26px;
+            overflow: hidden;
+            position: relative;
+            background: #090d16;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9), 0 0 40px rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Barra de progreso superior segmentada */
+        .wrapped-progress-bar {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            height: 3px;
+            display: flex;
+            gap: 5px;
+            z-index: 60;
+        }
+        .wrapped-prog-segment {
+            flex: 1;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .wrapped-prog-fill {
+            height: 100%;
+            width: 0%;
+            background: #ffffff;
+            border-radius: 3px;
+            transition: width 0.05s linear;
+        }
+
+        /* Botón cerrar [✕] */
+        .wrapped-close-btn {
+            position: absolute;
+            top: 24px;
+            right: 18px;
+            z-index: 70;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .wrapped-close-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+
+        /* Indicador de Pausa */
+        .wrapped-pause-indicator {
+            position: absolute;
+            top: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.78em;
+            font-weight: 700;
+            color: var(--accent-green);
+            z-index: 65;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .wrapped-container.is-paused .wrapped-pause-indicator {
+            opacity: 1;
+        }
+
+        /* Zonas táctiles invisibles (Tap navegación) */
+        .wrapped-touch-zones {
+            position: absolute;
+            inset: 0;
+            z-index: 25;
+            display: flex;
+        }
+        .wrapped-touch-left {
+            width: 35%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .wrapped-touch-right {
+            width: 65%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        /* Diapositivas */
+        .wrapped-slide {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 68px 24px 24px 24px;
+            color: #ffffff;
+            z-index: 10;
+            overflow: hidden;
+        }
+        .wrapped-slide.active {
+            display: flex;
+        }
+
+        /* Fondos Animados Fluidos Continuos */
+        .wrapped-bg-animated {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            background-size: 300% 300%;
+        }
+        .bg-aurora {
+            background: linear-gradient(-45deg, #09152a 0%, #172554 25%, #064e3b 60%, #0c4a6e 100%);
+            animation: auroraMotion 10s ease infinite;
+        }
+        .bg-lavalamp {
+            background: linear-gradient(135deg, #1e092b 0%, #581c87 35%, #831843 70%, #1f0b2e 100%);
+            animation: auroraMotion 12s ease infinite;
+        }
+        .bg-synthwave {
+            background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 40%, #0369a1 75%, #052e16 100%);
+            animation: auroraMotion 11s ease infinite;
+        }
+        .bg-pulse {
+            background: linear-gradient(-60deg, #090e1a 0%, #1e1e38 35%, #1e3a8a 70%, #064e3b 100%);
+            animation: auroraMotion 14s ease infinite;
+        }
+        .bg-hologram {
+            background: linear-gradient(135deg, #09181d 0%, #064e3b 30%, #78350f 70%, #131b2e 100%);
+            animation: auroraMotion 9s ease infinite;
+        }
+        @keyframes auroraMotion {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .wrapped-container.is-paused .wrapped-bg-animated,
+        .wrapped-container.is-paused .vinyl-disc,
+        .wrapped-container.is-paused .eq-bar {
+            animation-play-state: paused !important;
+        }
+
+        /* Elementos de contenido y Stagger animations */
+        .slide-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            z-index: 15;
+        }
+        .slide-header-badge {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.74em;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            animation: staggerUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+        .slide-main-title {
+            font-size: 1.6em;
+            font-weight: 800;
+            line-height: 1.25;
+            letter-spacing: -0.5px;
+            margin-bottom: 20px;
+            animation: staggerUp 0.6s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+
+        @keyframes staggerUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-stagger-1 { animation: staggerUp 0.6s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+        .slide-stagger-2 { animation: staggerUp 0.6s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+        .slide-stagger-3 { animation: staggerUp 0.6s 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+        .slide-stagger-4 { animation: staggerUp 0.6s 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+        /* Slide 1: Contador grande */
+        .counter-hero-wrap {
+            text-align: center;
+            margin: auto 0;
+            padding: 20px 0;
+        }
+        .counter-huge {
+            font-size: 3.6em;
+            font-weight: 900;
+            letter-spacing: -1.5px;
+            line-height: 1;
+            background: linear-gradient(135deg, #ffffff 40%, #a7f3d0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            text-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+        .counter-hero-label {
+            font-size: 0.82em;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .slide-grid-pill {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        .stat-pill {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 10px 8px;
+            text-align: center;
+        }
+        .stat-pill-icon { font-size: 1.1em; display: block; margin-bottom: 2px; }
+        .stat-pill-val { font-weight: 800; font-size: 1em; color: #ffffff; }
+        .stat-pill-lbl { font-size: 0.68em; color: var(--text-secondary); text-transform: uppercase; }
+        .slide-footer-quote {
+            text-align: center;
+            font-size: 0.82em;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: auto;
+            padding: 0 10px;
+        }
+
+        /* Slide 2: Vinilo Giratorio */
+        .vinyl-turntable-wrapper {
+            margin: auto 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 800px;
+        }
+        .vinyl-disc {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #0a0a0a 0%, #1e1e1e 40%, #0a0a0a 60%, #1e1e1e 75%, #050505 100%);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: spinVinyl 12s linear infinite;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+        }
+        @keyframes spinVinyl {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .vinyl-center-label {
+            width: 95px;
+            height: 95px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+        }
+        .vinyl-center-hole {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #090d16;
+            border: 2px solid #ffffff;
+            position: absolute;
+            z-index: 5;
+        }
+        .song-details-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 16px 18px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        .song-title-hero {
+            font-size: 1.15em;
+            font-weight: 800;
+            color: #ffffff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .song-artist-hero {
+            font-size: 0.92em;
+            color: var(--accent-green);
+            font-weight: 700;
+            margin: 4px 0 10px 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .song-badge-plays {
+            display: inline-block;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #ffffff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        /* Slide 3: Ranking Top 5 */
+        .top-ranking-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: auto 0;
+        }
+        .top-rank-row {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 8px 14px;
+            gap: 12px;
+        }
+        .rank-num-badge {
+            font-size: 1.1em;
+            font-weight: 900;
+            width: 24px;
+            text-align: center;
+            color: var(--accent-green);
+        }
+        .rank-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .rank-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .rank-name {
+            font-weight: 700;
+            font-size: 0.95em;
+            color: #ffffff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .rank-sub {
+            font-size: 0.75em;
+            color: var(--text-secondary);
+        }
+        /* Ecualizador animado */
+        .eq-visualizer {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 20px;
+            width: 24px;
+            flex-shrink: 0;
+        }
+        .eq-bar {
+            width: 4px;
+            background: var(--accent-green);
+            border-radius: 2px;
+            animation: eqBounce 1s ease-in-out infinite alternate;
+        }
+        .eq-bar:nth-child(1) { height: 40%; animation-delay: 0.1s; }
+        .eq-bar:nth-child(2) { height: 85%; animation-delay: 0.3s; }
+        .eq-bar:nth-child(3) { height: 60%; animation-delay: 0.2s; }
+        .eq-bar:nth-child(4) { height: 100%; animation-delay: 0.4s; }
+        @keyframes eqBounce {
+            0% { height: 25%; }
+            100% { height: 95%; }
+        }
+
+        /* Slide 4: Ritmo Biológico */
+        .peak-cards-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 10px 0 20px 0;
+        }
+        .peak-highlight-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+        }
+        .peak-icon { font-size: 1.8em; display: block; margin-bottom: 4px; }
+        .peak-label { font-size: 0.72em; font-weight: 800; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; }
+        .peak-value { font-size: 1.3em; font-weight: 900; color: #ffffff; margin-top: 4px; }
+
+        .day-rhythm-wrapper {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 16px 14px;
+            margin: auto 0;
+        }
+        .hourly-bars-flex {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 90px;
+            gap: 2px;
+            padding-top: 10px;
+        }
+        .hour-col {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px 3px 0 0;
+            transition: all 0.3s;
+            min-height: 4px;
+        }
+        .hour-col.peak-bar {
+            background: linear-gradient(180deg, #38bdf8 0%, #22c55e 100%);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+        }
+
+        /* Slide 5: Arquetipo e Insignia */
+        .archetype-badge-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border: 2px solid var(--accent-green);
+            border-radius: 20px;
+            padding: 22px 18px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.25);
+            margin: auto 0 10px 0;
+        }
+        .archetype-emoji {
+            font-size: 3.4em;
+            margin-bottom: 4px;
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+        }
+        .archetype-title {
+            font-size: 1.6em;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+        .archetype-sub {
+            font-size: 0.88em;
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+        .archetype-desc {
+            font-size: 0.82em;
+            color: #cbd5e1;
+            line-height: 1.4;
+            margin-top: 10px;
+        }
+
+        .summary-snapshot-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .summary-tile {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 10px 14px;
+        }
+        .summary-tile-lbl {
+            font-size: 0.7em;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .summary-tile-val {
+            font-size: 1.1em;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Botones de acción en parte inferior del Wrapped */
+        .wrapped-actions-bottom {
+            display: flex;
+            gap: 8px;
+            z-index: 50;
+            margin-top: 12px;
+        }
+        .btn-wrap-action {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            font-size: 0.85em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .btn-wrap-action:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .btn-wrap-action.primary-glow {
+            background: var(--accent-green);
+            color: #0a0f1d;
+            border-color: var(--accent-green);
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+        }
+
     </style>
+</head>
+<body>
+
+    <!-- Encabezado -->
+    <div class="header-title-wrapper">
+        <h1>📻 Monitor de Radio & Navidrome</h1>
+    </div>
+    
+    <!-- Barra de Navegación Principal Unificada (Pills) -->
+    <div class="master-nav-bar">
+        <div class="master-nav-pill">
+            <button class="master-nav-btn active" onclick="switchMasterNav('radio', this)">
+                📻 Monitor de Radio
+            </button>
+            <button class="master-nav-btn" onclick="switchMasterNav('stats', this)">
+                📊 Estadísticas de Música
+            </button>
+            <button class="master-nav-btn" onclick="switchMasterNav('history', this)">
+                🕒 Historial Lineal
+            </button>
+        </div>
+    </div>
+
+    <div class="main-wrapper">
+
+        <!-- ================= SECCIÓN 1: MONITOR DE RADIO ================= -->
+        <div id="secRadio">
+            <div class="container">
+            
+                <div class="tabs">
+                    <a href="/?tab=pendientes" class="tab-btn {% if tab == 'pendientes' %}active{% endif %}">
+                        📝 Pendientes ({{ counts.pendientes }})
+                    </a>
+                    <a href="/?tab=descargar" class="tab-btn {% if tab == 'descargar' %}active{% endif %}">
+                        ⬇️ A Descargar ({{ counts.descargar }})
+                    </a>
+                    <a href="/?tab=playlist" class="tab-btn {% if tab == 'playlist' %}active{% endif %}">
+                        🎶 Falta Playlist ({{ counts.playlist }})
+                    </a>
+                    <a href="/?tab=rotas" class="tab-btn {% if tab == 'rotas' %}active{% endif %}" 
+                       style="{% if counts.rotas > 0 and tab != 'rotas' %}background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3);{% elif tab == 'rotas' %}background: #ef4444; color: white; border-color: #ef4444;{% endif %}">
+                        ⚠️ Huérfanas y Rotas ({{ counts.rotas }})
+                    </a>
+                </div>
+                
+                <div class="quick-mode-box">
+                    <label>
+                        <input type="checkbox" id="autoplayToggle" style="transform: scale(1.3); accent-color: var(--accent-green); cursor: pointer;" checked> 
+                        🚀 Modo Rápido (Auto-reproducir la siguiente canción al procesar)
+                    </label>
+                </div>
+                
+                {% if tab == 'descargar' %}
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <form action="/add_manual" method="POST" class="add-form" style="margin: 0; flex: 1; min-width: 320px;">
+                            <input type="text" name="artist" placeholder="Artista" required style="flex: 1;">
+                            <input type="text" name="title" placeholder="Título" required style="flex: 1;">
+                            <button type="submit">➕ Añadir Manual</button>
+                        </form>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="btnSendAllLidarr" onclick="startSendAllLidarr()" class="btn btn-info" style="padding: 10px 18px; font-weight: 700;">
+                                🛸 Pedir a Lidarr Todos ({{ counts.descargar }})
+                            </button>
+                            <a href="/force_sync" class="btn btn-warning" style="padding: 10px 18px; font-weight: 700;">
+                                🔄 Forzar Sincronización
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Caja de Progreso en Tiempo Real para Pedir Todos a Lidarr -->
+                    <div id="lidarrProgressBox" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #a7f3d0; padding: 14px 20px; border-radius: 12px; margin-bottom: 22px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <span id="lidarrSpinner" style="display: inline-block; width: 20px; height: 20px; border: 3px solid var(--accent-green); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span>
+                            <span id="lidarrProgressText" style="font-weight: 600; font-size: 0.95em;">Iniciando petición a Lidarr...</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <div style="width: 240px; background: #0a0f1d; height: 12px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color);">
+                                <div id="lidarrProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #22c55e); transition: width 0.3s ease;"></div>
+                            </div>
+                            <span id="lidarrProgressPct" style="font-weight: bold; font-size: 0.88em; min-width: 42px; text-align: right; color: var(--accent-green);">0%</span>
+                        </div>
+                    </div>
+                {% elif tab == 'rotas' %}
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 22px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                <span style="font-weight: 700; color: var(--text-secondary); margin-right: 4px;">Filtrar:</span>
+                                <a href="/?tab=rotas&filtro=todas" class="btn" style="background: {% if filtro == 'todas' %}var(--accent-green); color: #0a0f1d; font-weight: bold;{% else %}var(--bg-card-hover); color: var(--text-secondary);{% endif %}; font-size: 0.85em;">
+                                    Todas ({{ counts.rotas }})
+                                </a>
+                                <a href="/?tab=rotas&filtro=renombradas" class="btn" style="background: {% if filtro == 'renombradas' %}var(--accent-amber); color: #0a0f1d; font-weight: bold;{% else %}var(--bg-card-hover); color: var(--text-secondary);{% endif %}; font-size: 0.85em;">
+                                    🔄 Renombradas ({{ counts.renombradas }})
+                                </a>
+                                <a href="/?tab=rotas&filtro=desaparecidas" class="btn" style="background: {% if filtro == 'desaparecidas' %}var(--accent-red); color: white; font-weight: bold;{% else %}var(--bg-card-hover); color: var(--text-secondary);{% endif %}; font-size: 0.85em;">
+                                    ❌ Desaparecidas ({{ counts.desaparecidas }})
+                                </a>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                {% if counts.renombradas > 0 %}
+                                    <a href="/fix_all_renamed" class="btn btn-success" style="font-weight: 700;">
+                                        ✨ Auto-Reparar Renombradas ({{ counts.renombradas }})
+                                    </a>
+                                {% endif %}
+                                {% if counts.desaparecidas > 0 %}
+                                    <a href="/clean_all_orphans_playlist" class="btn btn-warning" onclick="return confirm('¿Seguro que deseas desvincular de la playlist todas las canciones desaparecidas?')" style="font-weight: 700;">
+                                        🧹 Limpiar Huérfanas de Playlist
+                                    </a>
+                                {% endif %}
+                                <a href="/run_audit" class="btn btn-info" style="font-weight: 700;">
+                                    🔍 Auditar Biblioteca Ahora
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <ul class="song-list">
+                    {% for song in data %}
+                    <li style="transition: opacity 0.3s;">
+                        <div class="song-info">
+                            <div>
+                                <span class="artist">{{ song.artist }}</span> <span style="color: var(--text-muted); margin: 0 4px;">-</span> <span class="title">{{ song.title }}</span>
+                                {% if song.station %}
+                                <span class="station">📻 Emisora: {{ song.station }}</span>
+                                {% endif %}
+                                
+                                {% if tab == 'rotas' %}
+                                    <div style="margin-top: 8px;">
+                                        {% if song.estado_archivo == 'renombrada' %}
+                                            <span class="tag-renombrada">
+                                                🔄 Renombrada en disco: {{ song.nuevo_artista }} - {{ song.nuevo_titulo }}
+                                            </span>
+                                        {% elif song.estado_archivo == 'desaparecida' %}
+                                            <span class="tag-desaparecida">
+                                                ❌ Desaparecida de disco / Huérfana
+                                            </span>
+                                        {% endif %}
+                                        
+                                        {% if song.en_playlist %}
+                                            <span class="tag-playlist">
+                                                📑 Estaba en Playlist
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="actions">
+                                {% if tab == 'pendientes' %}
+                                    <button onclick="performAction('/change_status/{{ song.id }}/aceptada', this)" class="btn btn-success">👍 Aceptar</button>
+                                    <button onclick="performAction('/change_status/{{ song.id }}/rechazada', this)" class="btn btn-danger">👎 Rechazar</button>
+                                {% elif tab == 'descargar' %}
+                                    <button onclick="performAction('/delete/{{ song.id }}', this)" class="btn btn-danger">🗑️ Borrar</button>
+                                    {% if song.lidarr_status == 'enviado' %}
+                                        <span class="btn status-badge" data-id="{{ song.id }}" style="background: rgba(34, 197, 94, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); cursor: default;">
+                                            ✅ Solicitado a Lidarr
+                                        </span>
+                                    {% else %}
+                                        <button onclick="performAction('/send_lidarr/{{ song.id }}', this, false)" class="btn btn-info">🛸 Pedir a Lidarr</button>
+                                    {% endif %}
+                                {% elif tab == 'playlist' %}
+                                    <button onclick="performAction('/add_to_navidrome_playlist/{{ song.id }}', this)" class="btn btn-success">➕ Añadir a Navidrome</button>
+                                    <button onclick="performAction('/ignore_playlist/{{ song.id }}', this)" class="btn btn-danger">❌ Omitir</button>
+                                {% elif tab == 'rotas' %}
+                                    {% if song.estado_archivo == 'renombrada' %}
+                                        <button onclick="performAction('/fix_renamed/{{ song.id }}', this)" class="btn btn-success">🛠️ Reparar Enlace & Playlist</button>
+                                        <button onclick="performAction('/delete_libreria/{{ song.id }}', this)" class="btn btn-danger">🗑️ Borrar de BD</button>
+                                    {% elif song.estado_archivo == 'desaparecida' %}
+                                        <button onclick="performAction('/redownload_song/{{ song.id }}', this)" class="btn btn-info">🛸 Pedir a Lidarr</button>
+                                        <button onclick="toggleAltForm({{ song.id }})" class="btn btn-warning">✏️ Otra versión</button>
+                                        {% if song.en_playlist %}
+                                            <button onclick="performAction('/remove_from_playlist/{{ song.id }}', this, false); this.style.display='none';" class="btn btn-secondary">📑 Quitar de Playlist</button>
+                                        {% endif %}
+                                        <button onclick="performAction('/delete_libreria/{{ song.id }}', this)" class="btn btn-danger">🗑️ Borrar de BD</button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if tab == 'rotas' and song.estado_archivo == 'desaparecida' %}
+                            <div id="alt-form-{{ song.id }}" style="display: none; margin-top: 10px; padding: 14px; background: #0d1527; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <form action="/redownload_song/{{ song.id }}" method="POST" style="display: flex; gap: 10px; align-items: center; margin: 0; flex-wrap: wrap;">
+                                    <span style="font-weight: 700; font-size: 0.9em; color: var(--accent-cyan);">Buscar versión alternativa:</span>
+                                    <input type="text" name="artist" value="{{ song.artist }}" placeholder="Artista alternativo" class="dark-input" style="flex: 1; min-width: 160px;" required>
+                                    <input type="text" name="title" value="{{ song.title }}" placeholder="Título alternativo" class="dark-input" style="flex: 1; min-width: 160px;" required>
+                                    <button type="submit" class="btn btn-info" style="font-weight: 700;">🛸 Buscar esta versión en Lidarr</button>
+                                </form>
+                            </div>
+                        {% endif %}
+                        
+                        {% if song.preview_url %}
+                            <audio controls preload="none">
+                                <source src="{{ song.preview_url }}" type="audio/mpeg">
+                            </audio>
+                        {% endif %}
+                    </li>
+                    {% else %}
+                    <li style="text-align: center; color: var(--text-muted); font-size: 1.1em; padding: 50px;">No hay canciones en esta sección.</li>
+                    {% endfor %}
+                </ul>
+                
+                {% if total_pages > 1 %}
+                <div class="pagination">
+                    {% if page > 1 %}
+                        <a href="/?tab={{ tab }}{% if tab == 'rotas' %}&filtro={{ filtro }}{% endif %}&page={{ page - 1 }}" class="page-link">⬅️ Anterior</a>
+                    {% endif %}
+                    
+                    {% for p in range(1, total_pages + 1) %}
+                        {% if p == page %}
+                            <span class="page-link active">{{ p }}</span>
+                        {% elif p >= page - 2 and p <= page + 2 %}
+                            <a href="/?tab={{ tab }}{% if tab == 'rotas' %}&filtro={{ filtro }}{% endif %}&page={{ p }}" class="page-link">{{ p }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page < total_pages %}
+                        <a href="/?tab={{ tab }}{% if tab == 'rotas' %}&filtro={{ filtro }}{% endif %}&page={{ page + 1 }}" class="page-link">Siguiente ➡️</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+            </div>
+        </div><!-- Cierre secRadio -->
+
+
+        <!-- ================= SECCIÓN 2: ESTADÍSTICAS DE MÚSICA ================= -->
+        <div id="secStats" style="display: none;">
+            <div class="container">
+
+                <!-- Header de Estadísticas con Selector de Periodo -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="font-weight: 700; color: var(--text-secondary); margin-right: 6px;">Periodo:</span>
+                        <button class="stats-filter-btn" onclick="changeStatsPeriod('all', this)">Todo</button>
+                        <button class="stats-filter-btn active" onclick="changeStatsPeriod('today', this)">Hoy</button>
+                        <button class="stats-filter-btn" onclick="changeStatsPeriod('week', this)">Semana</button>
+                        <button class="stats-filter-btn" onclick="changeStatsPeriod('month', this)">Mes</button>
+                        <button class="stats-filter-btn" onclick="changeStatsPeriod('year', this)">Año</button>
+                    </div>
+                    <div id="statsLastUpdated" style="font-size: 0.85em; color: var(--text-muted); background: var(--bg-card); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border-color);">
+                        🔄 Actualizado en vivo
+                    </div>
+                </div>
+
+                <!-- 3 Tarjetas de Contadores Principales (Como el estilo de la imagen) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 28px;">
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+                        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(34, 197, 94, 0.15); color: var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 1.6em;">🎵</div>
+                        <div>
+                            <div style="font-size: 0.8em; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; color: var(--text-muted);">Total Canciones</div>
+                            <div id="statSongsCount" style="font-size: 2em; font-weight: 800; color: var(--text-primary);">-</div>
+                        </div>
+                    </div>
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+                        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); display: flex; align-items: center; justify-content: center; font-size: 1.6em;">👥</div>
+                        <div>
+                            <div style="font-size: 0.8em; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; color: var(--text-muted);">Artistas</div>
+                            <div id="statArtistsCount" style="font-size: 2em; font-weight: 800; color: var(--text-primary);">-</div>
+                        </div>
+                    </div>
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+                        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); display: flex; align-items: center; justify-content: center; font-size: 1.6em;">🎧</div>
+                        <div>
+                            <div id="statListensLabel" style="font-size: 0.8em; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; color: var(--text-muted);">Escuchas de Hoy</div>
+                            <div id="statListensCount" style="font-size: 2em; font-weight: 800; color: var(--accent-green);">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Donut y Álbumes Más Escuchados -->
+                <div style="display: grid; grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.8fr); gap: 24px; margin-bottom: 28px;">
+                    <!-- Donut Chart -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px;">
+                        <h3 style="margin-top: 0; margin-bottom: 18px; font-size: 1.1em; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                            <span style="color: var(--accent-cyan);">📊</span> Distribución de Escuchas
+                        </h3>
+                        <div style="height: 270px; position: relative;">
+                            <canvas id="listensPieChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Álbumes Más Escuchados -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px;">
+                        <h3 style="margin-top: 0; margin-bottom: 18px; font-size: 1.1em; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                            <span style="color: #ef4444;">💿</span> Álbumes Más Escuchados
+                        </h3>
+                        <div id="topAlbumsContainer" style="display: flex; gap: 14px; overflow-x: auto; padding-bottom: 12px;">
+                            <div style="color: var(--text-muted); padding: 20px;">Cargando álbumes...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Artistas Más Escuchados (Círculos como la foto del usuario) -->
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px;">
+                    <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 1.1em; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #f59e0b;">⭐</span> Artistas Más Escuchados
+                    </h3>
+                    <div id="topArtistsContainer" style="display: flex; gap: 22px; overflow-x: auto; padding-bottom: 12px;">
+                        <div style="color: var(--text-muted); padding: 15px;">Cargando artistas...</div>
+                    </div>
+                </div>
+
+            </div>
+        </div><!-- Cierre secStats -->
+
+
+        <!-- ================= SECCIÓN 3: HISTORIAL LINEAL EN VIVO ================= -->
+        <div id="secHistory" style="display: none;">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 1.4em; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                            🕒 Historial Cronológico de Escuchas
+                        </h2>
+                        <small style="color: var(--text-muted); font-size: 0.9em;">Registro en tiempo real sincronizado directamente con Navidrome</small>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="historySearchInput" placeholder="Buscar canciones, artistas..." class="dark-input" style="border-radius: 25px; padding: 9px 18px; width: 280px;" oninput="filterHistoryList(this.value)">
+                        <button class="btn btn-info" onclick="loadLiveHistory(true)">🔄 Refrescar</button>
+                    </div>
+                </div>
+
+                <div id="historyFeedList" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="text-align: center; color: var(--text-muted); padding: 40px;">Cargando historial...</div>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button id="btnLoadMoreHist" class="btn btn-info" style="padding: 12px 32px; font-weight: 700; border-radius: 30px; font-size: 0.95em;" onclick="loadMoreLiveHistory()">
+                        ➕ Cargar Más Escuchas
+                    </button>
+                </div>
+            </div>
+        </div><!-- Cierre secHistory -->
+
+    </div><!-- Cierre main-wrapper -->
+
+
+    <!-- SCRIPTS -->
     <script>
         function performAction(url, btn, removeLi = true) {
             const actionsDiv = btn.closest('.actions');
@@ -64,11 +1533,9 @@
                             li.style.opacity = '0.3';
                             setTimeout(() => li.remove(), 300);
                         } else {
-                            // Cambiamos el botón visualmente a estado enviado
-                            btn.outerHTML = `<span class="btn" style="background: #28a745; cursor: default;">✅ ${data.message || 'Enviado'}</span>`;
+                            btn.outerHTML = `<span class="btn" style="background: rgba(34, 197, 94, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); cursor: default;">✅ ${data.message || 'Enviado'}</span>`;
                             buttons.forEach(b => b.disabled = false);
                             
-                            // Opcional: auto-play de todas formas si se pidió
                             if (autoplay && nextLi) {
                                 const nextAudio = nextLi.querySelector('audio');
                                 if (nextAudio) {
@@ -90,379 +1557,91 @@
                     buttons.forEach(b => b.disabled = false);
                 });
         }
-    </script>
 
-    <!-- Chart.js para estadísticas -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* Master Navigation Bar */
-        .master-nav-bar {
-            max-width: 1000px;
-            margin: 0 auto 25px auto;
-            display: flex;
-            justify-content: center;
-        }
-        .master-nav-pill {
-            background: #e2e8f0;
-            padding: 5px;
-            border-radius: 30px;
-            display: inline-flex;
-            gap: 5px;
-        }
-        .master-nav-btn {
-            padding: 9px 22px;
-            border-radius: 25px;
-            border: none;
-            background: transparent;
-            font-size: 0.95em;
-            font-weight: bold;
-            color: #475569;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-        .master-nav-btn.active {
-            background: #007BFF;
-            color: white !important;
-            box-shadow: 0 2px 8px rgba(0,123,255,0.3);
-        }
-        .master-nav-btn:hover:not(.active) {
-            background: #cbd5e1;
-            color: #1e293b;
+        // ================= PEDIR TODOS A LIDARR =================
+        function startSendAllLidarr() {
+            if (!confirm("¿Deseas enviar todas las canciones de la lista de descargas a Lidarr?")) return;
+            const btn = document.getElementById('btnSendAllLidarr');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = "⏳ Iniciando...";
+            }
+
+            fetch('/send_all_lidarr', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    initLidarrProgressMonitor();
+                })
+                .catch(err => {
+                    alert("Error contactando al servidor: " + err);
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = "🛸 Pedir a Lidarr Todos";
+                    }
+                });
         }
 
-        /* Stats Filter Buttons */
-        .stats-filter-btn {
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
-            padding: 5px 14px;
-            border-radius: 15px;
-            font-size: 0.85em;
-            font-weight: 600;
-            color: #475569;
-            cursor: pointer;
-            transition: all 0.2s;
+        let lidarrPollInterval = null;
+        function initLidarrProgressMonitor() {
+            const box = document.getElementById('lidarrProgressBox');
+            const text = document.getElementById('lidarrProgressText');
+            const bar = document.getElementById('lidarrProgressBar');
+            const pct = document.getElementById('lidarrProgressPct');
+            const btn = document.getElementById('btnSendAllLidarr');
+            const spinner = document.getElementById('lidarrSpinner');
+
+            if (!box) return;
+            box.style.display = 'flex';
+
+            if (lidarrPollInterval) clearInterval(lidarrPollInterval);
+
+            lidarrPollInterval = setInterval(() => {
+                fetch('/send_all_lidarr_status')
+                    .then(res => res.json())
+                    .then(status => {
+                        if (status.running) {
+                            const percent = status.total > 0 ? Math.round((status.current / status.total) * 100) : 0;
+                            if (bar) bar.style.width = percent + '%';
+                            if (pct) pct.innerText = percent + '%';
+                            if (text) text.innerHTML = `⏳ Enviando a Lidarr (<b>${status.current}/${status.total}</b>): <span style="color: #f8fafc;">${status.current_song}</span>`;
+                            if (btn) {
+                                btn.disabled = true;
+                                btn.innerHTML = `⏳ Enviando (${status.current}/${status.total})`;
+                            }
+                        } else {
+                            clearInterval(lidarrPollInterval);
+                            lidarrPollInterval = null;
+                            if (bar) bar.style.width = '100%';
+                            if (pct) pct.innerText = '100%';
+                            if (spinner) spinner.style.display = 'none';
+                            if (text) text.innerHTML = `✅ <b>¡Proceso completado!</b> ${status.message || (status.success_count + ' enviadas correctamente')}`;
+                            if (btn) {
+                                btn.disabled = false;
+                                btn.innerHTML = "🛸 Pedir a Lidarr Todos";
+                            }
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2500);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error comprobando estado de Lidarr:", err);
+                    });
+            }, 1800);
         }
-        .stats-filter-btn.active {
-            background: #007BFF;
-            color: white;
-            border-color: #007BFF;
-        }
-        .stats-filter-btn:hover:not(.active) {
-            background: #e2e8f0;
-        }
 
-        /* History Feed Item */
-        .hist-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            transition: all 0.2s;
-        }
-        .hist-item:hover {
-            background: #f1f5f9;
-            border-color: #007BFF;
-            transform: translateX(4px);
-        }
-        .hist-cover {
-            width: 52px;
-            height: 52px;
-            border-radius: 8px;
-            object-fit: cover;
-            margin-right: 15px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            flex-shrink: 0;
-        }
-    </style>
+        // Si ya hay un lote ejecutándose en segundo plano al cargar la página, se engancha automáticamente
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/send_all_lidarr_status')
+                .then(r => r.json())
+                .then(status => {
+                    if (status && status.running) {
+                        initLidarrProgressMonitor();
+                    }
+                })
+                .catch(() => {});
+        });
 
-</head>
-<body>
-    <h1>📻 Monitor de Radio & Navidrome</h1>
-    
-    
-    <!-- Barra de Navegación Principal Unificada -->
-    <div class="master-nav-bar">
-        <div class="master-nav-pill">
-            <button class="master-nav-btn active" onclick="switchMasterNav('radio', this)">
-                📻 Monitor de Radio
-            </button>
-            <button class="master-nav-btn" onclick="switchMasterNav('stats', this)">
-                📊 Estadísticas de Música
-            </button>
-            <button class="master-nav-btn" onclick="switchMasterNav('history', this)">
-                🕒 Historial Lineal
-            </button>
-        </div>
-    </div>
-
-    <!-- SECCIÓN: MONITOR DE RADIO -->
-    <div id="secRadio">
-        <div class="container">
-        
-        <div class="tabs">
-            <a href="/?tab=pendientes" class="tab-btn {% if tab == 'pendientes' %}active{% endif %}">📝 Pendientes ({{ counts.pendientes }})</a>
-            <a href="/?tab=descargar" class="tab-btn {% if tab == 'descargar' %}active{% endif %}">⬇️ A Descargar ({{ counts.descargar }})</a>
-            <a href="/?tab=playlist" class="tab-btn {% if tab == 'playlist' %}active{% endif %}">🎶 Falta Playlist ({{ counts.playlist }})</a>
-            <a href="/?tab=rotas" class="tab-btn {% if tab == 'rotas' %}active{% endif %}" style="{% if counts.rotas > 0 and tab != 'rotas' %}background: #ffebee; color: #c62828; border: 1px solid #ef9a9a;{% elif tab == 'rotas' %}background: #dc3545; color: white;{% endif %}">⚠️ Huérfanas y Rotas ({{ counts.rotas }})</a>
-        </div>
-        
-        <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 2px dashed #007BFF;">
-            <label style="font-weight: bold; cursor: pointer; font-size: 1.1em; color: #333;">
-                <input type="checkbox" id="autoplayToggle" style="transform: scale(1.3); margin-right: 10px;" checked> 
-                🚀 Modo Rápido (Auto-reproducir la siguiente canción al procesar)
-            </label>
-        </div>
-        
-        {% if tab == 'descargar' %}
-            <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
-                <form action="/add_manual" method="POST" class="add-form" style="margin: 0; width: 70%;">
-                    <input type="text" name="artist" placeholder="Artista" required>
-                    <input type="text" name="title" placeholder="Título" required>
-                    <button type="submit">➕ Añadir Manual</button>
-                </form>
-                <a href="/force_sync" class="btn btn-warning" style="padding: 10px 15px; font-weight: bold;">🔄 Forzar Sincronización</a>
-            </div>
-        {% elif tab == 'rotas' %}
-            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <span style="font-weight: bold; color: #495057;">Filtrar:</span>
-                        <a href="/?tab=rotas&filtro=todas" class="btn" style="background: {% if filtro == 'todas' %}#007BFF{% else %}#6c757d{% endif %}; font-size: 0.85em;">Todas ({{ counts.rotas }})</a>
-                        <a href="/?tab=rotas&filtro=renombradas" class="btn" style="background: {% if filtro == 'renombradas' %}#ffc107; color: #212529;{% else %}#6c757d;{% endif %}; font-size: 0.85em;">🔄 Renombradas ({{ counts.renombradas }})</a>
-                        <a href="/?tab=rotas&filtro=desaparecidas" class="btn" style="background: {% if filtro == 'desaparecidas' %}#dc3545{% else %}#6c757d{% endif %}; font-size: 0.85em;">❌ Desaparecidas ({{ counts.desaparecidas }})</a>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        {% if counts.renombradas > 0 %}
-                            <a href="/fix_all_renamed" class="btn btn-success" style="font-weight: bold;">✨ Auto-Reparar Renombradas ({{ counts.renombradas }})</a>
-                        {% endif %}
-                        {% if counts.desaparecidas > 0 %}
-                            <a href="/clean_all_orphans_playlist" class="btn btn-warning" onclick="return confirm('¿Seguro que deseas desvincular de la playlist todas las canciones desaparecidas?')" style="font-weight: bold;">🧹 Limpiar Huérfanas de Playlist</a>
-                        {% endif %}
-                        <a href="/run_audit" class="btn btn-info" style="font-weight: bold;">🔍 Auditar Biblioteca Ahora</a>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-        
-        <ul>
-            {% for song in data %}
-            <li style="transition: opacity 0.3s;">
-                <div class="song-info">
-                    <div>
-                        <span class="artist">{{ song.artist }}</span> - {{ song.title }}
-                        {% if song.station %}
-                        <span class="station">Radio: {{ song.station }}</span>
-                        {% endif %}
-                        
-                        {% if tab == 'rotas' %}
-                            <div style="margin-top: 6px;">
-                                {% if song.estado_archivo == 'renombrada' %}
-                                    <span style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 3px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold;">
-                                        🔄 Renombrada en disco: {{ song.nuevo_artista }} - {{ song.nuevo_titulo }}
-                                    </span>
-                                {% elif song.estado_archivo == 'desaparecida' %}
-                                    <span style="background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 3px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold;">
-                                        ❌ Desaparecida de disco / Huérfana
-                                    </span>
-                                {% endif %}
-                                
-                                {% if song.en_playlist %}
-                                    <span style="background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; padding: 3px 6px; border-radius: 4px; font-size: 0.8em; margin-left: 5px;">
-                                        📑 Estaba en Playlist
-                                    </span>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="actions">
-                        {% if tab == 'pendientes' %}
-                            <button onclick="performAction('/change_status/{{ song.id }}/aceptada', this)" class="btn btn-success">👍 Aceptar</button>
-                            <button onclick="performAction('/change_status/{{ song.id }}/rechazada', this)" class="btn btn-danger">👎 Rechazar</button>
-                        {% elif tab == 'descargar' %}
-                            <button onclick="performAction('/delete/{{ song.id }}', this)" class="btn btn-danger">🗑️ Borrar</button>
-                            {% if song.lidarr_status == 'enviado' %}
-                                <span class="btn status-badge" data-id="{{ song.id }}" style="background: #28a745; cursor: default;">✅ Solicitado a Lidarr</span>
-                            {% else %}
-                                <button onclick="performAction('/send_lidarr/{{ song.id }}', this, false)" class="btn btn-info">🛸 Pedir a Lidarr</button>
-                            {% endif %}
-                        {% elif tab == 'playlist' %}
-                            <button onclick="performAction('/add_to_navidrome_playlist/{{ song.id }}', this)" class="btn btn-success">➕ Añadir a Navidrome</button>
-                            <button onclick="performAction('/ignore_playlist/{{ song.id }}', this)" class="btn btn-danger">❌ Omitir</button>
-                        {% elif tab == 'rotas' %}
-                            {% if song.estado_archivo == 'renombrada' %}
-                                <button onclick="performAction('/fix_renamed/{{ song.id }}', this)" class="btn btn-success">🛠️ Reparar Enlace & Playlist</button>
-                                <button onclick="performAction('/delete_libreria/{{ song.id }}', this)" class="btn btn-danger">🗑️ Borrar de BD</button>
-                            {% elif song.estado_archivo == 'desaparecida' %}
-                                <button onclick="performAction('/redownload_song/{{ song.id }}', this)" class="btn btn-info">🛸 Pedir a Lidarr</button>
-                                <button onclick="toggleAltForm({{ song.id }})" class="btn btn-warning">✏️ Otra versión</button>
-                                {% if song.en_playlist %}
-                                    <button onclick="performAction('/remove_from_playlist/{{ song.id }}', this, false); this.style.display='none';" class="btn" style="background: #6c757d;">📑 Quitar de Playlist</button>
-                                {% endif %}
-                                <button onclick="performAction('/delete_libreria/{{ song.id }}', this)" class="btn btn-danger">🗑️ Borrar de BD</button>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                </div>
-                
-                {% if tab == 'rotas' and song.estado_archivo == 'desaparecida' %}
-                    <div id="alt-form-{{ song.id }}" style="display: none; margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 6px; border: 1px solid #ced4da;">
-                        <form action="/redownload_song/{{ song.id }}" method="POST" style="display: flex; gap: 8px; align-items: center; margin: 0; flex-wrap: wrap;">
-                            <span style="font-weight: bold; font-size: 0.9em; color: #495057;">Buscar versión alternativa:</span>
-                            <input type="text" name="artist" value="{{ song.artist }}" placeholder="Artista alternativo" style="flex: 1; min-width: 150px; padding: 6px; border: 1px solid #ced4da; border-radius: 4px;" required>
-                            <input type="text" name="title" value="{{ song.title }}" placeholder="Título alternativo" style="flex: 1; min-width: 150px; padding: 6px; border: 1px solid #ced4da; border-radius: 4px;" required>
-                            <button type="submit" class="btn btn-info" style="font-weight: bold;">🛸 Buscar esta versión en Lidarr</button>
-                        </form>
-                    </div>
-                {% endif %}
-                
-                {% if song.preview_url %}
-                    <audio controls preload="none">
-                        <source src="{{ song.preview_url }}" type="audio/mpeg">
-                    </audio>
-                {% endif %}
-            </li>
-            {% else %}
-            <li style="text-align: center; color: #888; font-size: 1.1em; padding: 40px;">No hay canciones en esta sección.</li>
-            {% endfor %}
-        </ul>
-        
-        {% if total_pages > 1 %}
-        <div class="pagination">
-            {% if page > 1 %}
-                <a href="/?tab={{ tab }}{% if tab == 'rotas' %}&filtro={{ filtro }}{% endif %}&page={{ page - 1 }}" class="page-link">⬅️ Anterior</a>
-            {% endif %}
-            
-            {% for p in range(1, total_pages + 1) %}
-                {% if p == page %}
-                    <span class="page-link active">{{ p }}</span>
-                {% elif p >= page - 2 and p <= page + 2 %}
-                    <a href="/?tab={{ tab }}{% if tab == 'rotas' %}&filtro={{ filtro }}{% endif %}&page={{ p }}" class="page-link">{{ p }}</a>
-                {% endif %}
-            {% endfor %}
-            
-            {% if page < total_pages %}
-                <a href="/?tab={{ tab }}{% if tab == 'rotas' %}&filtro={{ filtro }}{% endif %}&page={{ page + 1 }}" class="page-link">Siguiente ➡️</a>
-            {% endif %}
-        </div>
-        {% endif %}
-
-    </div>
-    
-        </div><!-- Cierre de secRadio -->
-
-
-    <!-- SECCIÓN: ESTADÍSTICAS DE MÚSICA -->
-    <div id="secStats" style="display: none; max-width: 1100px; margin: 0 auto;">
-        <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px;">
-            <!-- Period Selector Bar -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-weight: bold; color: #555; margin-right: 5px;">Periodo:</span>
-                    <button class="stats-filter-btn" onclick="changeStatsPeriod('all', this)">Todo</button>
-                    <button class="stats-filter-btn active" onclick="changeStatsPeriod('today', this)">Hoy</button>
-                    <button class="stats-filter-btn" onclick="changeStatsPeriod('week', this)">Semana</button>
-                    <button class="stats-filter-btn" onclick="changeStatsPeriod('month', this)">Mes</button>
-                    <button class="stats-filter-btn" onclick="changeStatsPeriod('year', this)">Año</button>
-                </div>
-                <div id="statsLastUpdated" style="font-size: 0.85em; color: #777;">
-                    🔄 Actualizado en vivo
-                </div>
-            </div>
-
-            <!-- Summary Counters -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 25px;">
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 15px;">
-                    <div style="width: 48px; height: 48px; border-radius: 10px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">🎵</div>
-                    <div>
-                        <div style="font-size: 0.78em; text-transform: uppercase; font-weight: bold; color: #64748b;">Total Canciones</div>
-                        <div id="statSongsCount" style="font-size: 1.7em; font-weight: bold; color: #0f172a;">-</div>
-                    </div>
-                </div>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 15px;">
-                    <div style="width: 48px; height: 48px; border-radius: 10px; background: #f3e8ff; color: #9333ea; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">👥</div>
-                    <div>
-                        <div style="font-size: 0.78em; text-transform: uppercase; font-weight: bold; color: #64748b;">Artistas</div>
-                        <div id="statArtistsCount" style="font-size: 1.7em; font-weight: bold; color: #0f172a;">-</div>
-                    </div>
-                </div>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 15px;">
-                    <div style="width: 48px; height: 48px; border-radius: 10px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">🎧</div>
-                    <div>
-                        <div id="statListensLabel" style="font-size: 0.78em; text-transform: uppercase; font-weight: bold; color: #64748b;">Escuchas de Hoy</div>
-                        <div id="statListensCount" style="font-size: 1.7em; font-weight: bold; color: #16a34a;">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts & Top Albums Row -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 25px;">
-                <!-- Pie Chart -->
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px;">
-                    <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.05em; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-                        📊 Distribución de Escuchas
-                    </h3>
-                    <div style="height: 260px; position: relative;">
-                        <canvas id="listensPieChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Top Albums -->
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px;">
-                    <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.05em; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-                        💿 Álbumes Más Escuchados
-                    </h3>
-                    <div id="topAlbumsContainer" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px;">
-                        <div style="color: #64748b; padding: 20px;">Cargando álbumes...</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Top Artists -->
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px;">
-                <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.05em; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-                    ⭐ Artistas Más Escuchados
-                </h3>
-                <div id="topArtistsContainer" style="display: flex; gap: 20px; overflow-x: auto; padding-bottom: 10px;">
-                    <div style="color: #64748b; padding: 15px;">Cargando artistas...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- SECCIÓN: HISTORIAL LINEAL EN VIVO -->
-    <div id="secHistory" style="display: none; max-width: 1000px; margin: 0 auto;">
-        <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                <div>
-                    <h2 style="margin: 0; font-size: 1.3em; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-                        🕒 Historial Cronológico de Escuchas
-                    </h2>
-                    <small style="color: #64748b;">Registro en tiempo real sincronizado con Navidrome</small>
-                </div>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" id="historySearchInput" placeholder="Filtrar por canción o artista..." style="padding: 7px 14px; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 0.9em; outline: none; width: 220px;" oninput="filterHistoryList(this.value)">
-                    <button class="btn btn-info" onclick="loadLiveHistory(true)">🔄 Refrescar</button>
-                </div>
-            </div>
-
-            <div id="historyFeedList" style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="text-align: center; color: #64748b; padding: 40px;">Cargando historial...</div>
-            </div>
-
-            <div style="text-align: center; margin-top: 25px;">
-                <button id="btnLoadMoreHist" class="btn btn-info" style="padding: 10px 25px; font-weight: bold; border-radius: 25px;" onclick="loadMoreLiveHistory()">
-                    ➕ Cargar Más Escuchas
-                </button>
-            </div>
-        </div>
-    </div>
-
-
-
-    <script>
         // Master Navigation Switching
         function switchMasterNav(section, btn) {
             document.querySelectorAll('.master-nav-btn').forEach(b => b.classList.remove('active'));
@@ -514,43 +1693,44 @@
                 const albums = await resAlbums.json();
                 const albContainer = document.getElementById('topAlbumsContainer');
                 if (!albums || albums.length === 0) {
-                    albContainer.innerHTML = '<div style="color: #64748b; padding: 20px;">Sin reproducciones en este periodo.</div>';
+                    albContainer.innerHTML = '<div style="color: var(--text-muted); padding: 20px;">Sin reproducciones en este periodo.</div>';
                 } else {
                     albContainer.innerHTML = albums.map(a => `
-                        <div style="min-width: 120px; max-width: 120px; text-align: center;">
-                            <div style="position: relative; margin-bottom: 6px;">
+                        <div class="album-card">
+                            <div class="album-cover-wrap">
                                 <img src="${a.imagen_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200'}" 
-                                     style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);"
+                                     class="album-cover-img"
                                      onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200'">
-                                <span style="position: absolute; top: 4px; left: 4px; background: #dc3545; color: white; border-radius: 12px; padding: 2px 7px; font-size: 0.75em; font-weight: bold;">
+                                <span class="album-play-badge">
                                     ${a.total_reproducciones}
                                 </span>
                             </div>
-                            <div style="font-weight: bold; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${a.album_nombre}">${a.album_nombre}</div>
-                            <div style="font-size: 0.75em; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${a.artista_principal || ''}</div>
+                            <div style="font-weight: 700; font-size: 0.85em; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${a.album_nombre}">${a.album_nombre}</div>
+                            <div style="font-size: 0.75em; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${a.artista_principal || ''}</div>
                         </div>
                     `).join('');
                 }
 
-                // 3. Top Artists
+                // 3. Top Artists (Círculos como la foto enviada por el usuario)
                 const resArtists = await fetch('/api/top-artists?range=' + statsPeriod);
                 const artists = await resArtists.json();
                 const artContainer = document.getElementById('topArtistsContainer');
                 if (!artists || artists.length === 0) {
-                    artContainer.innerHTML = '<div style="color: #64748b; padding: 15px;">Sin escuchas en este periodo.</div>';
+                    artContainer.innerHTML = '<div style="color: var(--text-muted); padding: 15px;">Sin escuchas en este periodo.</div>';
                     renderStatsChart([]);
                 } else {
                     artContainer.innerHTML = artists.map(art => `
-                        <div style="min-width: 80px; max-width: 80px; text-align: center;">
-                            <div style="position: relative; display: inline-block; margin-bottom: 6px;">
+                        <div style="min-width: 86px; max-width: 86px; text-align: center;">
+                            <div class="artist-circle-wrap">
                                 <img src="${art.imagen_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200'}" 
-                                     style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #007BFF; box-shadow: 0 2px 8px rgba(0,0,0,0.15);"
+                                     class="artist-circle-img"
                                      onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200'">
-                                <span style="position: absolute; bottom: 0; right: 0; background: #007BFF; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.72em; font-weight: bold;">
+                                <span class="artist-play-badge">
                                     ${art.total_reproducciones}
                                 </span>
                             </div>
-                            <div style="font-weight: bold; font-size: 0.8em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${art.nombre}">${art.nombre}</div>
+                            <div style="font-weight: 700; font-size: 0.82em; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${art.nombre}">${art.nombre}</div>
+                            <div style="font-size: 0.72em; color: var(--text-muted); text-transform: uppercase;">Artista</div>
                         </div>
                     `).join('');
                     renderStatsChart(artists);
@@ -565,7 +1745,8 @@
             const top5 = artists.slice(0, 5);
             const labels = top5.map(a => a.nombre);
             const dataVals = top5.map(a => a.total_reproducciones);
-            const colors = ['#007BFF', '#6f42c1', '#e83e8c', '#fd7e14', '#28a745', '#17a2b8'];
+            // Paleta moderna estilo Spotify / Emerald
+            const colors = ['#22c55e', '#10b981', '#38bdf8', '#818cf8', '#f59e0b', '#ec4899'];
 
             if (statsPieChart) statsPieChart.destroy();
             if (dataVals.length === 0) return;
@@ -578,16 +1759,23 @@
                         data: dataVals,
                         backgroundColor: colors,
                         borderWidth: 2,
-                        borderColor: '#fff'
+                        borderColor: '#182238'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { 
+                                boxWidth: 12, 
+                                color: '#94a3b8',
+                                font: { size: 11, family: 'Inter' } 
+                            } 
+                        }
                     },
-                    cutout: '65%'
+                    cutout: '68%'
                 }
             });
         }
@@ -611,7 +1799,7 @@
 
                 if (reset) container.innerHTML = '';
                 if (!items || items.length === 0) {
-                    if (reset) container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">No se encontraron reproducciones.</div>';
+                    if (reset) container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">No se encontraron reproducciones.</div>';
                     document.getElementById('btnLoadMoreHist').style.display = 'none';
                     return;
                 }
@@ -631,21 +1819,21 @@
                                  class="hist-cover" 
                                  onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100'">
                             <div style="flex-grow: 1; min-width: 0; margin-right: 15px;">
-                                <div style="font-weight: bold; color: #1e293b; font-size: 1.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <div style="font-weight: 700; color: var(--text-primary); font-size: 1.05em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     ${item.cancion || 'Canción Desconocida'}
                                 </div>
-                                <div style="color: #007BFF; font-size: 0.9em; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <div style="color: var(--accent-green); font-size: 0.92em; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     ${item.artistas || 'Artista Desconocido'}
                                 </div>
-                                <div style="color: #64748b; font-size: 0.8em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <div style="color: var(--text-muted); font-size: 0.82em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     ${item.album_nombre || ''}
                                 </div>
                             </div>
                             <div style="text-align: right; flex-shrink: 0;">
-                                <span style="background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 12px; font-size: 0.78em; font-weight: bold; display: inline-block; margin-bottom: 4px;">
+                                <span style="background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 700; display: inline-block; margin-bottom: 4px;">
                                     ${rel}
                                 </span>
-                                <div style="color: #64748b; font-size: 0.75em;">${formatted}</div>
+                                <div style="color: var(--text-muted); font-size: 0.78em;">${formatted}</div>
                             </div>
                         </div>
                     `;
@@ -655,7 +1843,7 @@
                 document.getElementById('btnLoadMoreHist').style.display = (items.length >= HIST_LIMIT) ? 'inline-block' : 'none';
             } catch (e) {
                 console.error("Error al cargar historial:", e);
-                if (reset) container.innerHTML = '<div style="color: #dc3545; padding: 20px; text-align: center;">Error al cargar historial.</div>';
+                if (reset) container.innerHTML = '<div style="color: #ef4444; padding: 20px; text-align: center;">Error al cargar historial.</div>';
             }
         }
 
@@ -681,14 +1869,10 @@
         function filterHistoryList(val) {
             loadLiveHistory(true);
         }
-    </script>
 
-
-    <script>
         document.addEventListener("DOMContentLoaded", function() {
             document.querySelectorAll('.status-badge').forEach(badge => {
                 const songId = badge.getAttribute('data-id');
-                // Mostrar cargando
                 badge.innerHTML = "🔄 Consultando estado...";
                 
                 fetch(`/live_status/${songId}`)
@@ -696,7 +1880,7 @@
                     .then(data => {
                         if (data.status_text) {
                             badge.innerHTML = data.status_text;
-                            if(data.color) badge.style.background = data.color;
+                            if (data.color) badge.style.background = data.color;
                         }
                     })
                     .catch(err => {
@@ -712,5 +1896,522 @@
             }
         }
     </script>
+
+    <!-- ================= MODAL VERTICAL MUSIC WRAPPED 9:16 ================= -->
+    <div id="wrappedModal" class="wrapped-modal-overlay" style="display: none;">
+        <div class="wrapped-container" id="wrappedContainer">
+            
+            <!-- Barra de Progreso Segmentada (5 diapositivas) -->
+            <div class="wrapped-progress-bar no-hold">
+                <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-0"></div></div>
+                <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-1"></div></div>
+                <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-2"></div></div>
+                <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-3"></div></div>
+                <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-4"></div></div>
+            </div>
+
+            <!-- Botón cerrar [✕] -->
+            <button class="wrapped-close-btn no-hold" onclick="closeMusicWrapped()" title="Cerrar Wrapped">✕</button>
+
+            <!-- Indicador visual de Pausa -->
+            <div class="wrapped-pause-indicator" id="wrappedPauseIndicator">⏸ Pausa</div>
+
+            <!-- Zonas táctiles para avanzar / retroceder -->
+            <div class="wrapped-touch-zones">
+                <div class="wrapped-touch-left" onclick="handleWrappedTap(event, 'prev')"></div>
+                <div class="wrapped-touch-right" onclick="handleWrappedTap(event, 'next')"></div>
+            </div>
+
+            <!-- DIAPOSITIVA 1: VOLUMEN SÓNICO -->
+            <div class="wrapped-slide active" id="wrapped-slide-0">
+                <div class="wrapped-bg-animated bg-aurora"></div>
+                <div class="slide-content">
+                    <div class="slide-header-badge">✨ TU VOLUMEN SÓNICO</div>
+                    <div class="slide-stagger-1 slide-main-title">Has vivido un año cargado de ritmo</div>
+                    
+                    <div class="slide-stagger-2 counter-hero-wrap">
+                        <div id="wrapVolMinutes" class="counter-huge">0</div>
+                        <div class="counter-hero-label">MINUTOS ESCUCHADOS</div>
+                    </div>
+
+                    <div class="slide-stagger-3 slide-grid-pill">
+                        <div class="stat-pill">
+                            <span class="stat-pill-icon">⏳</span>
+                            <div class="stat-pill-val" id="wrapVolHours">0 h</div>
+                            <div class="stat-pill-lbl">Horas</div>
+                        </div>
+                        <div class="stat-pill">
+                            <span class="stat-pill-icon">📅</span>
+                            <div class="stat-pill-val" id="wrapVolDays">0 d</div>
+                            <div class="stat-pill-lbl">Días continuos</div>
+                        </div>
+                        <div class="stat-pill">
+                            <span class="stat-pill-icon">🎵</span>
+                            <div class="stat-pill-val" id="wrapVolSongs">0</div>
+                            <div class="stat-pill-lbl">Temas únicos</div>
+                        </div>
+                    </div>
+
+                    <div class="slide-stagger-4 slide-footer-quote">
+                        "Tu biblioteca no descansa. Estás en la cima de la fidelidad auditiva."
+                    </div>
+                </div>
+                <div class="wrapped-actions-bottom no-hold">
+                    <button class="btn-wrap-action" onclick="exportWrappedGif(0)">📥 Guardar GIF</button>
+                    <button class="btn-wrap-action" onclick="exportWrappedImage(0)">📸 Guardar Historia</button>
+                </div>
+            </div>
+
+            <!-- DIAPOSITIVA 2: TU TEMA EN BUCLE -->
+            <div class="wrapped-slide" id="wrapped-slide-1">
+                <div class="wrapped-bg-animated bg-lavalamp"></div>
+                <div class="slide-content">
+                    <div class="slide-header-badge">🔁 TU TEMA EN BUCLE</div>
+                    <div class="slide-stagger-1 slide-main-title">La canción que no pudiste dejar de repetir</div>
+
+                    <div class="slide-stagger-2 vinyl-turntable-wrapper">
+                        <div class="vinyl-disc">
+                            <img id="wrapLoopCover" class="vinyl-center-label" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200" alt="Cover" crossorigin="anonymous">
+                            <div class="vinyl-center-hole"></div>
+                        </div>
+                    </div>
+
+                    <div class="slide-stagger-3 song-details-card">
+                        <div id="wrapLoopTitle" class="song-title-hero">Cargando...</div>
+                        <div id="wrapLoopArtist" class="song-artist-hero">Artista</div>
+                        <div class="song-badge-plays">
+                            Sonó <span id="wrapLoopCount" style="color: #22c55e; font-weight: 800; font-size: 1.2em;">0</span> veces
+                        </div>
+                    </div>
+                </div>
+                <div class="wrapped-actions-bottom no-hold">
+                    <button class="btn-wrap-action" onclick="exportWrappedGif(1)">📥 Guardar GIF</button>
+                    <button class="btn-wrap-action" onclick="exportWrappedImage(1)">📸 Guardar Historia</button>
+                </div>
+            </div>
+
+            <!-- DIAPOSITIVA 3: TOP 5 DE ARTISTAS -->
+            <div class="wrapped-slide" id="wrapped-slide-2">
+                <div class="wrapped-bg-animated bg-synthwave"></div>
+                <div class="slide-content">
+                    <div class="slide-header-badge">👑 TU TOP 5 DEL PODIO</div>
+                    <div class="slide-stagger-1 slide-main-title">Los que nunca salieron de tus listas</div>
+
+                    <div id="wrapTopArtistsList" class="slide-stagger-2 top-ranking-list">
+                        <!-- Rellenado dinámicamente -->
+                    </div>
+                </div>
+                <div class="wrapped-actions-bottom no-hold">
+                    <button class="btn-wrap-action" onclick="exportWrappedGif(2)">📥 Guardar GIF</button>
+                    <button class="btn-wrap-action" onclick="exportWrappedImage(2)">📸 Guardar Historia</button>
+                </div>
+            </div>
+
+            <!-- DIAPOSITIVA 4: RITMO BIOLÓGICO -->
+            <div class="wrapped-slide" id="wrapped-slide-3">
+                <div class="wrapped-bg-animated bg-pulse"></div>
+                <div class="slide-content">
+                    <div class="slide-header-badge">⚡ RITMO BIOLÓGICO</div>
+                    <div class="slide-stagger-1 slide-main-title">Tu sincronía perfecta con el sonido</div>
+
+                    <div class="slide-stagger-2 peak-cards-container">
+                        <div class="peak-highlight-card">
+                            <span class="peak-icon">⏰</span>
+                            <div class="peak-label">HORA DORADA</div>
+                            <div id="wrapPeakHour" class="peak-value">11:00 AM</div>
+                        </div>
+                        <div class="peak-highlight-card">
+                            <span class="peak-icon">🔥</span>
+                            <div class="peak-label">DÍA RÉCORD</div>
+                            <div id="wrapPeakDay" class="peak-value">Lunes</div>
+                        </div>
+                    </div>
+
+                    <div class="slide-stagger-3 day-rhythm-wrapper">
+                        <div style="font-size: 0.75em; color: var(--text-muted); text-align: center; margin-bottom: 8px; font-weight: 700; letter-spacing: 0.5px;">
+                            FRECUENCIA POR HORAS (00:00 - 23:00)
+                        </div>
+                        <div id="wrapHourlyBars" class="hourly-bars-flex">
+                            <!-- 24 barras de horas -->
+                        </div>
+                    </div>
+                </div>
+                <div class="wrapped-actions-bottom no-hold">
+                    <button class="btn-wrap-action" onclick="exportWrappedGif(3)">📥 Guardar GIF</button>
+                    <button class="btn-wrap-action" onclick="exportWrappedImage(3)">📸 Guardar Historia</button>
+                </div>
+            </div>
+
+            <!-- DIAPOSITIVA 5: RESUMEN Y ARQUETIPO -->
+            <div class="wrapped-slide" id="wrapped-slide-4">
+                <div class="wrapped-bg-animated bg-hologram"></div>
+                <div class="slide-content" style="justify-content: flex-start; gap: 12px;">
+                    <div class="slide-header-badge">🌟 TU IDENTIDAD MUSICAL</div>
+
+                    <div class="slide-stagger-1 archetype-badge-box">
+                        <div id="wrapArchetypeEmoji" class="archetype-emoji">🔁</div>
+                        <div id="wrapArchetypeTitle" class="archetype-title">Adicto al Bucle</div>
+                        <div id="wrapArchetypeSub" class="archetype-sub">Cuando una canción te atrapa, no hay escapatoria</div>
+                        <div id="wrapArchetypeDesc" class="archetype-desc">...</div>
+                    </div>
+
+                    <div class="slide-stagger-2 summary-snapshot-grid">
+                        <div class="summary-tile">
+                            <div class="summary-tile-lbl">Minutos</div>
+                            <div id="wrapSumMinutes" class="summary-tile-val">-</div>
+                        </div>
+                        <div class="summary-tile">
+                            <div class="summary-tile-lbl">Canciones</div>
+                            <div id="wrapSumSongs" class="summary-tile-val">-</div>
+                        </div>
+                        <div class="summary-tile" style="grid-column: span 2;">
+                            <div class="summary-tile-lbl">Canción Más Quemada</div>
+                            <div id="wrapSumTopSong" class="summary-tile-val" style="font-size: 0.9em;">-</div>
+                        </div>
+                    </div>
+
+                    <div class="slide-stagger-3" style="text-align: center; margin-top: auto;">
+                        <span style="font-size: 0.72em; letter-spacing: 2px; color: rgba(255,255,255,0.4); font-weight: 700;">
+                            RADIO MONITOR & NAVIDROME • 2026
+                        </span>
+                    </div>
+                </div>
+                <div class="wrapped-actions-bottom no-hold" style="margin-top: 10px;">
+                    <button id="btnExportGif" class="btn-wrap-action primary-glow" onclick="exportWrappedGif(4)">
+                        📥 Descargar GIF
+                    </button>
+                    <button id="btnExportImg" class="btn-wrap-action" onclick="exportWrappedImage(4)">
+                        📸 Guardar Historia
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ================= CONTROLLER INTERACTIVO MUSIC WRAPPED ================= -->
+    <script>
+        let wrappedData = null;
+        let wrappedCurrentSlide = 0;
+        const WRAPPED_TOTAL_SLIDES = 5;
+        const WRAPPED_SLIDE_DURATION = 5500; // 5.5s por diapositiva
+        let wrappedSlideStartTime = 0;
+        let wrappedSlidePausedTime = 0;
+        let wrappedIsPaused = false;
+        let wrappedProgressFrame = null;
+        let wrappedHoldTimer = null;
+
+        // Abrir Music Wrapped
+        async function openMusicWrapped() {
+            const modal = document.getElementById('wrappedModal');
+            modal.style.display = 'flex';
+            
+            try {
+                if (!wrappedData) {
+                    const res = await fetch('/api/wrapped');
+                    wrappedData = await res.json();
+                }
+                populateWrappedData(wrappedData);
+                initWrappedStory();
+            } catch (e) {
+                console.error("Error abriendo Wrapped:", e);
+                alert("Error cargando los datos de tu Wrapped.");
+                closeMusicWrapped();
+            }
+        }
+
+        // Cerrar Music Wrapped
+        function closeMusicWrapped() {
+            const modal = document.getElementById('wrappedModal');
+            modal.style.display = 'none';
+            pauseWrappedTimer();
+            if (wrappedProgressFrame) cancelAnimationFrame(wrappedProgressFrame);
+            // Reset barras de progreso
+            for (let i = 0; i < WRAPPED_TOTAL_SLIDES; i++) {
+                const seg = document.getElementById(`prog-seg-${i}`);
+                if (seg) seg.style.width = '0%';
+            }
+        }
+
+        // Rellenar datos dinámicos en el DOM
+        function populateWrappedData(data) {
+            if (!data) return;
+
+            // Slide 1: Volumen
+            const vol = data.volume || {};
+            animateCounter(document.getElementById('wrapVolMinutes'), vol.total_minutos || 0, 1600);
+            document.getElementById('wrapVolHours').innerText = (vol.total_horas || 0) + ' h';
+            document.getElementById('wrapVolDays').innerText = (vol.dias_continuos || 0) + ' d';
+            document.getElementById('wrapVolSongs').innerText = (vol.canciones_unicas || 0);
+
+            // Slide 2: Tu tema en bucle
+            const topSong = data.top_song || {};
+            const coverImg = document.getElementById('wrapLoopCover');
+            if (coverImg) {
+                coverImg.src = topSong.imagen_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200';
+            }
+            document.getElementById('wrapLoopTitle').innerText = topSong.cancion || 'Canción Desconocida';
+            document.getElementById('wrapLoopArtist').innerText = topSong.artista || 'Artista Desconocido';
+            animateCounter(document.getElementById('wrapLoopCount'), topSong.reproducciones || 0, 1400);
+
+            // Slide 3: Top 5 de Artistas
+            const topArtists = data.top_artists || [];
+            const artistsContainer = document.getElementById('wrapTopArtistsList');
+            if (artistsContainer) {
+                artistsContainer.innerHTML = topArtists.map((a, idx) => `
+                    <div class="top-rank-row" style="animation-delay: ${0.1 * (idx + 1)}s;">
+                        <span class="rank-num-badge">#${idx + 1}</span>
+                        <img src="${a.imagen_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100'}" class="rank-avatar" crossorigin="anonymous">
+                        <div class="rank-info">
+                            <div class="rank-name">${a.nombre}</div>
+                            <div class="rank-sub">${a.reproducciones} reproducciones</div>
+                        </div>
+                        <div class="eq-visualizer">
+                            <div class="eq-bar"></div>
+                            <div class="eq-bar"></div>
+                            <div class="eq-bar"></div>
+                            <div class="eq-bar"></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Slide 4: Ritmo Biológico (24h)
+            const act = data.activity || {};
+            const hourText = (act.peak_hour !== undefined) ? `${String(act.peak_hour).padStart(2, '0')}:00 h` : '11:00 h';
+            document.getElementById('wrapPeakHour').innerText = hourText;
+            document.getElementById('wrapPeakDay').innerText = act.peak_day || 'Lunes';
+
+            const hourlyContainer = document.getElementById('wrapHourlyBars');
+            if (hourlyContainer && act.hourly_distribution) {
+                const maxVal = Math.max(...act.hourly_distribution, 1);
+                hourlyContainer.innerHTML = act.hourly_distribution.map((val, h) => {
+                    const pct = Math.max(Math.round((val / maxVal) * 100), 8);
+                    const isPeak = (h === act.peak_hour);
+                    return `<div class="hour-col ${isPeak ? 'peak-bar' : ''}" style="height: ${pct}%;" title="${h}:00 - ${val} escuchas"></div>`;
+                }).join('');
+            }
+
+            // Slide 5: Resumen y Arquetipo
+            const arch = data.archetype || {};
+            document.getElementById('wrapArchetypeEmoji').innerText = arch.emoji || '🔁';
+            document.getElementById('wrapArchetypeTitle').innerText = arch.title || 'Adicto al Bucle';
+            document.getElementById('wrapArchetypeSub').innerText = arch.subtitle || '';
+            document.getElementById('wrapArchetypeDesc').innerText = arch.desc || '';
+
+            document.getElementById('wrapSumMinutes').innerText = (vol.total_minutos || 0).toLocaleString();
+            document.getElementById('wrapSumSongs').innerText = (vol.canciones_unicas || 0).toLocaleString();
+            document.getElementById('wrapSumTopSong').innerText = `${topSong.cancion || '-'} (${topSong.reproducciones || 0} reps)`;
+        }
+
+        // Inicializar historias interactivas
+        function initWrappedStory() {
+            wrappedCurrentSlide = 0;
+            goToWrappedSlide(0);
+            setupWrappedHoldListeners();
+        }
+
+        // Cambiar a diapositiva específica
+        function goToWrappedSlide(index) {
+            if (index < 0) index = 0;
+            if (index >= WRAPPED_TOTAL_SLIDES) {
+                closeMusicWrapped();
+                return;
+            }
+
+            wrappedCurrentSlide = index;
+
+            // Mostrar solo la slide activa
+            document.querySelectorAll('.wrapped-slide').forEach((s, idx) => {
+                s.classList.toggle('active', idx === index);
+            });
+
+            // Actualizar barras de progreso anteriores y siguientes
+            for (let i = 0; i < WRAPPED_TOTAL_SLIDES; i++) {
+                const seg = document.getElementById(`prog-seg-${i}`);
+                if (seg) {
+                    if (i < index) seg.style.width = '100%';
+                    else if (i > index) seg.style.width = '0%';
+                }
+            }
+
+            startWrappedSlideTimer(false);
+        }
+
+        // Temporizador y barra de progreso fluida
+        function startWrappedSlideTimer(fromPaused = false) {
+            if (!fromPaused) {
+                wrappedSlideStartTime = performance.now();
+                wrappedSlidePausedTime = 0;
+            } else {
+                wrappedSlideStartTime = performance.now() - wrappedSlidePausedTime;
+            }
+            wrappedIsPaused = false;
+            if (wrappedProgressFrame) cancelAnimationFrame(wrappedProgressFrame);
+            updateWrappedProgressLoop();
+        }
+
+        function pauseWrappedTimer() {
+            wrappedIsPaused = true;
+            wrappedSlidePausedTime = performance.now() - wrappedSlideStartTime;
+            if (wrappedProgressFrame) cancelAnimationFrame(wrappedProgressFrame);
+        }
+
+        function updateWrappedProgressLoop() {
+            if (wrappedIsPaused) return;
+            const elapsed = performance.now() - wrappedSlideStartTime;
+            const pct = Math.min((elapsed / WRAPPED_SLIDE_DURATION) * 100, 100);
+
+            const seg = document.getElementById(`prog-seg-${wrappedCurrentSlide}`);
+            if (seg) seg.style.width = pct + '%';
+
+            if (elapsed >= WRAPPED_SLIDE_DURATION) {
+                goToWrappedSlide(wrappedCurrentSlide + 1);
+            } else {
+                wrappedProgressFrame = requestAnimationFrame(updateWrappedProgressLoop);
+            }
+        }
+
+        // Navegación por tap izquierda / derecha
+        function handleWrappedTap(e, direction) {
+            if (wrappedIsPaused) return;
+            if (direction === 'prev') {
+                goToWrappedSlide(wrappedCurrentSlide - 1);
+            } else {
+                goToWrappedSlide(wrappedCurrentSlide + 1);
+            }
+        }
+
+        // Mantener pulsado (long press / hold) para pausar
+        function setupWrappedHoldListeners() {
+            const container = document.getElementById('wrappedContainer');
+            if (!container || container.dataset.holdSetup) return;
+            container.dataset.holdSetup = "true";
+
+            const handleHoldStart = (e) => {
+                if (e.target.closest('.no-hold') || e.target.closest('button')) return;
+                wrappedHoldTimer = setTimeout(() => {
+                    pauseWrappedTimer();
+                    container.classList.add('is-paused');
+                }, 160);
+            };
+
+            const handleHoldEnd = (e) => {
+                if (wrappedHoldTimer) clearTimeout(wrappedHoldTimer);
+                if (wrappedIsPaused) {
+                    container.classList.remove('is-paused');
+                    startWrappedSlideTimer(true);
+                }
+            };
+
+            container.addEventListener('pointerdown', handleHoldStart);
+            window.addEventListener('pointerup', handleHoldEnd);
+            window.addEventListener('pointercancel', handleHoldEnd);
+        }
+
+        // Animación de contador incremental con easeOutExpo
+        function animateCounter(element, targetVal, duration = 1600) {
+            if (!element) return;
+            const startVal = 0;
+            const startTime = performance.now();
+            function step(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                const current = Math.floor(startVal + (targetVal - startVal) * ease);
+                element.innerText = current.toLocaleString('es-ES');
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    element.innerText = targetVal.toLocaleString('es-ES');
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        // ================= EXPORTACIÓN EN IMAGEN (PNG) =================
+        async function exportWrappedImage(slideIndex) {
+            pauseWrappedTimer();
+            const slideEl = document.getElementById(`wrapped-slide-${slideIndex}`);
+            if (!slideEl) return;
+
+            const btn = event ? event.target : document.getElementById('btnExportImg');
+            const origText = btn ? btn.innerText : '';
+            if (btn) { btn.disabled = true; btn.innerText = "⏳ Generando..."; }
+
+            try {
+                const canvas = await html2canvas(slideEl, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: null
+                });
+                const link = document.createElement('a');
+                link.download = `Music_Wrapped_Slide_${slideIndex + 1}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (err) {
+                console.error("Error guardando imagen:", err);
+                alert("Error generando la imagen.");
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = origText; }
+                startWrappedSlideTimer(true);
+            }
+        }
+
+        // ================= EXPORTACIÓN EN GIF ANIMADO =================
+        async function exportWrappedGif(slideIndex) {
+            pauseWrappedTimer();
+            const slideEl = document.getElementById(`wrapped-slide-${slideIndex}`);
+            if (!slideEl) return;
+
+            const btn = event ? event.target : document.getElementById('btnExportGif');
+            const origText = btn ? btn.innerText : '';
+            if (btn) { btn.disabled = true; btn.innerText = "⏳ Grabando frames..."; }
+
+            try {
+                // Capturar 8 fotogramas espaciados a 120ms
+                const frames = [];
+                for (let i = 0; i < 8; i++) {
+                    const canvas = await html2canvas(slideEl, {
+                        scale: 1.2,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: null
+                    });
+                    frames.push(canvas.toDataURL('image/png'));
+                    await new Promise(r => setTimeout(r, 120));
+                }
+
+                if (btn) btn.innerText = "⏳ Compilando GIF...";
+
+                gifshot.createGIF({
+                    images: frames,
+                    gifWidth: 360,
+                    gifHeight: 640,
+                    interval: 0.12,
+                    numFrames: frames.length
+                }, function(obj) {
+                    if (!obj.error) {
+                        const link = document.createElement('a');
+                        link.download = `Music_Wrapped_Slide_${slideIndex + 1}.gif`;
+                        link.href = obj.image;
+                        link.click();
+                    } else {
+                        alert("Error al compilar el GIF: " + obj.error);
+                    }
+                    if (btn) { btn.disabled = false; btn.innerText = origText; }
+                    startWrappedSlideTimer(true);
+                });
+            } catch (err) {
+                console.error("Error generando GIF:", err);
+                alert("Error creando el GIF.");
+                if (btn) { btn.disabled = false; btn.innerText = origText; }
+                startWrappedSlideTimer(true);
+            }
+        }
+    </script>
+
 </body>
 </html>

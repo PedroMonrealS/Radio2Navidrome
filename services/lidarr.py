@@ -1,4 +1,5 @@
 import time
+import threading
 import requests
 from thefuzz import fuzz
 from config import LIDARR_URL, LIDARR_API, QBIT_URL, QBIT_USER, QBIT_PASS
@@ -143,3 +144,91 @@ def get_live_download_status(artist):
         return {"status_text": "🔍 Buscando origen / Sin semillas", "color": "#6c757d"}
     except Exception as e:
         return {"status_text": "✗ Error conectando a Qbit", "color": "#dc3545"}
+
+# ================= PROCESAMIENTO EN LOTE (BATCH) =================
+batch_status = {
+    "running": False,
+    "total": 0,
+    "current": 0,
+    "current_song": "",
+    "success_count": 0,
+    "error_count": 0,
+    "message": ""
+}
+
+def get_lidarr_batch_status():
+    return batch_status
+
+def _batch_worker():
+    from database import get_db_connection
+    global batch_status
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        # 1. Priorizar canciones que aún no se han enviado
+        cursor.execute("SELECT id, title, artist FROM canciones_descubiertas WHERE estado = 'aceptada' AND (lidarr_status != 'enviado' OR lidarr_status IS NULL)")
+        pending = cursor.fetchall()
+        
+        # 2. Si todas ya estaban marcadas como enviadas, pero el usuario pulsa pedir todos, las procesa todas
+        if not pending:
+            cursor.execute("SELECT id, title, artist FROM canciones_descubiertas WHERE estado = 'aceptada'")
+            pending = cursor.fetchall()
+            
+        cursor.close()
+        conn.close()
+        
+        batch_status["total"] = len(pending)
+        batch_status["current"] = 0
+        batch_status["success_count"] = 0
+        batch_status["error_count"] = 0
+        
+        if not pending:
+            batch_status["running"] = False
+            batch_status["message"] = "No hay canciones pendientes para pedir a Lidarr."
+            return
+
+        for song in pending:
+            batch_status["current"] += 1
+            batch_status["current_song"] = f"{song['artist']} - {song['title']}"
+            
+            success, msg = request_lidarr_song(song['artist'], song['title'])
+            
+            if success:
+                batch_status["success_count"] += 1
+                try:
+                    conn = get_db_connection()
+                    cur = conn.cursor()
+                    cur.execute("UPDATE canciones_descubiertas SET lidarr_status = 'enviado' WHERE id = %s", (song['id'],))
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+                except Exception as e:
+                    print(f"Error actualizando lidarr_status de canción {song['id']}: {e}")
+            else:
+                batch_status["error_count"] += 1
+                
+            time.sleep(1) # Pausa preventiva para evitar saturar Lidarr y MusicBrainz
+            
+        batch_status["message"] = f"Finalizado: {batch_status['success_count']} enviadas con éxito, {batch_status['error_count']} fallidas/omitidas."
+    except Exception as e:
+        batch_status["message"] = f"Error en lote: {e}"
+    finally:
+        batch_status["running"] = False
+
+def start_batch_request_lidarr():
+    global batch_status
+    if batch_status["running"]:
+        return False, "Ya hay un proceso en ejecución."
+    
+    batch_status["running"] = True
+    batch_status["total"] = 0
+    batch_status["current"] = 0
+    batch_status["current_song"] = "Iniciando..."
+    batch_status["success_count"] = 0
+    batch_status["error_count"] = 0
+    batch_status["message"] = "En proceso..."
+    
+    t = threading.Thread(target=_batch_worker, daemon=True)
+    t.start()
+    return True, "Proceso iniciado correctamente en segundo plano."
+

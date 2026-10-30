@@ -4,7 +4,8 @@ from services.stats_service import (
     get_top_artists,
     get_top_albums,
     get_songs,
-    get_history
+    get_history,
+    get_wrapped_data
 )
 
 stats_bp = Blueprint('stats_bp', __name__)
@@ -59,4 +60,13 @@ def api_history():
         return jsonify(data)
     except Exception as e:
         print(f"Error api_history: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@stats_bp.route('/api/wrapped')
+def api_wrapped():
+    try:
+        data = get_wrapped_data()
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error api_wrapped: {e}")
         return jsonify({"error": str(e)}), 500
