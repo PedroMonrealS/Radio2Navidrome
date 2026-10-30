@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify
+import requests
+from flask import Blueprint, request, jsonify, Response
 from services.stats_service import (
     get_stats,
     get_top_artists,
@@ -70,3 +71,19 @@ def api_wrapped():
     except Exception as e:
         print(f"Error api_wrapped: {e}")
         return jsonify({"error": str(e)}), 500
+
+@stats_bp.route('/api/proxy-image')
+def api_proxy_image():
+    url = request.args.get('url')
+    if not url:
+        return "Missing url", 400
+    try:
+        res = requests.get(url, timeout=10)
+        content_type = res.headers.get('content-type', 'image/jpeg')
+        response = Response(res.content, mimetype=content_type)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Cache-Control'] = 'public, max-age=86400'
+        return response
+    except Exception as e:
+        print(f"Error proxying image {url}: {e}")
+        return "Error fetching image", 500
