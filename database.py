@@ -5,21 +5,23 @@ from config import (
 )
 
 def get_db_connection():
-    """Conexión a la base de datos de Radio y Descargas (bibliotecaMusical)"""
+    """Conexión a la base de datos de Radio y Descargas (bibliotecaMusical) con zona horaria de España"""
     return mysql.connector.connect(
         host=MYSQL_HOST,
         user=MYSQL_USER,
         password=MYSQL_PASS,
-        database=MYSQL_DB
+        database=MYSQL_DB,
+        init_command="SET time_zone = 'Europe/Madrid'"
     )
 
 def get_stats_db_connection():
-    """Conexión a la base de datos de Estadísticas e Historial de Escuchas (spotify_db)"""
+    """Conexión a la base de datos de Estadísticas e Historial de Escuchas (spotify_db) con zona horaria de España"""
     return mysql.connector.connect(
         host=STATS_DB_HOST,
         user=STATS_DB_USER,
         password=STATS_DB_PASS,
-        database=STATS_DB_NAME
+        database=STATS_DB_NAME,
+        init_command="SET time_zone = 'Europe/Madrid'"
     )
 
 def init_db():

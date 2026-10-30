@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitor de Radio & Navidrome</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -603,11 +606,13 @@
         }
 
         /* Modal Overlay a Pantalla Completa */
+        
+        /* ================= CSS PARA MUSIC WRAPPED (9 HISTORIAS VERTICALES 9:16) ================= */
         .wrapped-modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(5, 8, 16, 0.92);
-            backdrop-filter: blur(20px);
+            background: rgba(5, 8, 16, 0.94);
+            backdrop-filter: blur(22px);
             z-index: 99999;
             display: flex;
             align-items: center;
@@ -622,15 +627,15 @@
 
         /* Contenedor Vertical 9:16 (Historias de Instagram / Spotify) */
         .wrapped-container {
-            width: min(420px, 94vw);
-            height: min(740px, 94vh);
+            width: min(430px, 94vw);
+            height: min(760px, 94vh);
             aspect-ratio: 9/16;
             border-radius: 26px;
             overflow: hidden;
             position: relative;
             background: #090d16;
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9), 0 0 40px rgba(34, 197, 94, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 50px rgba(34, 197, 94, 0.22);
+            border: 1px solid rgba(255, 255, 255, 0.16);
             display: flex;
             flex-direction: column;
             user-select: none;
@@ -645,7 +650,7 @@
             right: 14px;
             height: 3px;
             display: flex;
-            gap: 5px;
+            gap: 4px;
             z-index: 60;
         }
         .wrapped-prog-segment {
@@ -672,20 +677,52 @@
             width: 34px;
             height: 34px;
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             color: #ffffff;
             font-size: 1.1em;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
         .wrapped-close-btn:hover {
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(239, 68, 68, 0.8);
             transform: scale(1.1);
+            border-color: rgba(239, 68, 68, 0.9);
         }
+
+        /* Flechas sutiles de navegación de historias */
+        .wrapped-nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+            font-size: 1.5em;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 55;
+            opacity: 0.65;
+            transition: all 0.2s ease;
+            user-select: none;
+            backdrop-filter: blur(4px);
+        }
+        .wrapped-nav-arrow:hover {
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.85);
+            transform: translateY(-50%) scale(1.12);
+        }
+        .wrapped-nav-arrow.left-arrow { left: 10px; }
+        .wrapped-nav-arrow.right-arrow { right: 10px; }
 
         /* Indicador de Pausa */
         .wrapped-pause-indicator {
@@ -693,7 +730,7 @@
             top: 28px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.65);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 4px 14px;
@@ -708,24 +745,6 @@
         }
         .wrapped-container.is-paused .wrapped-pause-indicator {
             opacity: 1;
-        }
-
-        /* Zonas táctiles invisibles (Tap navegación) */
-        .wrapped-touch-zones {
-            position: absolute;
-            inset: 0;
-            z-index: 25;
-            display: flex;
-        }
-        .wrapped-touch-left {
-            width: 35%;
-            height: 100%;
-            cursor: pointer;
-        }
-        .wrapped-touch-right {
-            width: 65%;
-            height: 100%;
-            cursor: pointer;
         }
 
         /* Diapositivas */
@@ -767,6 +786,14 @@
             background: linear-gradient(-60deg, #090e1a 0%, #1e1e38 35%, #1e3a8a 70%, #064e3b 100%);
             animation: auroraMotion 14s ease infinite;
         }
+        .bg-fire {
+            background: linear-gradient(135deg, #450a0a 0%, #831843 35%, #ea580c 70%, #1e1b4b 100%);
+            animation: auroraMotion 10s ease infinite;
+        }
+        .bg-cosmic {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #047857 75%, #0284c7 100%);
+            animation: auroraMotion 12s ease infinite;
+        }
         .bg-hologram {
             background: linear-gradient(135deg, #09181d 0%, #064e3b 30%, #78350f 70%, #131b2e 100%);
             animation: auroraMotion 9s ease infinite;
@@ -800,62 +827,69 @@
             font-size: 0.74em;
             font-weight: 800;
             letter-spacing: 1px;
-            margin-bottom: 12px;
             text-transform: uppercase;
-            animation: staggerUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+            margin-bottom: 12px;
+            color: #ffffff;
         }
         .slide-main-title {
-            font-size: 1.6em;
-            font-weight: 800;
+            font-size: 1.55em;
+            font-weight: 900;
             line-height: 1.25;
             letter-spacing: -0.5px;
-            margin-bottom: 20px;
-            animation: staggerUp 0.6s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+            margin-bottom: 16px;
+            color: #ffffff;
         }
 
-        @keyframes staggerUp {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .slide-stagger-1 { animation: staggerUp 0.6s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-        .slide-stagger-2 { animation: staggerUp 0.6s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-        .slide-stagger-3 { animation: staggerUp 0.6s 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-        .slide-stagger-4 { animation: staggerUp 0.6s 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+        /* Animaciones escalonadas de entrada */
+        .slide-stagger-1 { animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+        .slide-stagger-2 { animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both; }
+        .slide-stagger-3 { animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both; }
+        .slide-stagger-4 { animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.48s both; }
 
-        /* Slide 1: Contador grande */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(22px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Contadores Hero */
         .counter-hero-wrap {
-            text-align: center;
             margin: auto 0;
-            padding: 20px 0;
+            text-align: center;
         }
         .counter-huge {
-            font-size: 3.6em;
+            font-size: 4em;
             font-weight: 900;
-            letter-spacing: -1.5px;
             line-height: 1;
-            background: linear-gradient(135deg, #ffffff 40%, #a7f3d0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
-            text-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+            letter-spacing: -1.5px;
+            color: #ffffff;
+            text-shadow: 0 0 35px rgba(34, 197, 94, 0.5);
         }
         .counter-hero-label {
-            font-size: 0.82em;
+            font-size: 0.85em;
             font-weight: 800;
             letter-spacing: 2px;
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--accent-green);
+            text-transform: uppercase;
+            margin-top: 8px;
         }
+
+        /* Pastillas de métricas */
         .slide-grid-pill {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 8px;
-            margin-top: 10px;
-            margin-bottom: 15px;
+            margin: 18px 0;
         }
         .stat-pill {
             background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
             padding: 10px 8px;
             text-align: center;
@@ -867,12 +901,12 @@
             text-align: center;
             font-size: 0.82em;
             font-style: italic;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.75);
             margin-top: auto;
             padding: 0 10px;
         }
 
-        /* Slide 2: Vinilo Giratorio */
+        /* Slide 1: Vinilo Giratorio */
         .vinyl-turntable-wrapper {
             margin: auto 0;
             display: flex;
@@ -951,7 +985,7 @@
             font-weight: 600;
         }
 
-        /* Slide 3: Ranking Top 5 */
+        /* Slide 2 & 3: Ranking Top 5 */
         .top-ranking-list {
             display: flex;
             flex-direction: column;
@@ -1023,39 +1057,70 @@
             100% { height: 95%; }
         }
 
-        /* Slide 4: Ritmo Biológico */
+        /* Slide 4: Álbum Estrella 3D */
+        .album-hero-showcase {
+            margin: auto 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+        .album-3d-case {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 25px rgba(56, 189, 248, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transform: rotateY(-12deg) rotateX(8deg);
+            transition: transform 0.5s ease;
+        }
+        .album-hero-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .album-case-reflection {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 50%);
+            pointer-events: none;
+        }
+
+        /* Slide 5: Ritmo Biológico */
         .peak-cards-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin: 10px 0 20px 0;
+            margin: 10px 0 16px 0;
         }
         .peak-highlight-card {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 14px;
-            padding: 16px;
+            padding: 14px;
             text-align: center;
         }
         .peak-icon { font-size: 1.8em; display: block; margin-bottom: 4px; }
         .peak-label { font-size: 0.72em; font-weight: 800; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; }
-        .peak-value { font-size: 1.3em; font-weight: 900; color: #ffffff; margin-top: 4px; }
+        .peak-value { font-size: 1.25em; font-weight: 900; color: #ffffff; margin-top: 4px; }
 
         .day-rhythm-wrapper {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
-            padding: 16px 14px;
-            margin: auto 0;
+            padding: 14px 12px;
+            margin: auto 0 0 0;
         }
         .hourly-bars-flex {
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
-            height: 90px;
+            height: 80px;
             gap: 2px;
-            padding-top: 10px;
+            padding-top: 8px;
         }
         .hour-col {
             flex: 1;
@@ -1069,60 +1134,146 @@
             box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
         }
 
-        /* Slide 5: Arquetipo e Insignia */
+        /* Slide 6: El Día Más Musical (Récords) */
+        .records-hero-wrap {
+            margin: auto 0;
+            text-align: center;
+        }
+        .records-badge-date {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(234, 88, 12, 0.25);
+            border: 1px solid rgba(234, 88, 12, 0.6);
+            color: #fdba74;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 0.88em;
+            margin-bottom: 12px;
+        }
+        .records-metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 18px 0;
+        }
+        .record-pill {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+        }
+        .record-pill-val {
+            font-size: 1.3em;
+            font-weight: 900;
+            color: #ffffff;
+        }
+        .record-pill-lbl {
+            font-size: 0.72em;
+            color: var(--text-secondary);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* Slide 7: Brújula Sónica & Diversidad */
+        .dominant-slot-hero {
+            background: rgba(14, 116, 144, 0.25);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 14px;
+            padding: 12px 14px;
+            text-align: center;
+            font-size: 0.9em;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+        .slots-breakdown-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: auto 0;
+        }
+        .slot-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 0.82em;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 8px 12px;
+            border-radius: 10px;
+        }
+        .slot-bar-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0 6px;
+        }
+        .slot-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #38bdf8, #22c55e);
+        }
+
+        /* Slide 8: Arquetipo e Insignia */
         .archetype-badge-box {
             background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.05) 100%);
             border: 2px solid var(--accent-green);
             border-radius: 20px;
-            padding: 22px 18px;
+            padding: 16px 14px;
             text-align: center;
             box-shadow: 0 10px 30px rgba(34, 197, 94, 0.25);
-            margin: auto 0 10px 0;
+            margin: 0;
         }
         .archetype-emoji {
-            font-size: 3.4em;
-            margin-bottom: 4px;
+            font-size: 2.8em;
+            margin-bottom: 2px;
             filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
         }
         .archetype-title {
-            font-size: 1.6em;
+            font-size: 1.45em;
             font-weight: 900;
             letter-spacing: -0.5px;
             color: #ffffff;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         .archetype-sub {
-            font-size: 0.88em;
+            font-size: 0.85em;
             color: var(--accent-green);
             font-weight: 700;
         }
         .archetype-desc {
-            font-size: 0.82em;
+            font-size: 0.8em;
             color: #cbd5e1;
-            line-height: 1.4;
-            margin-top: 10px;
+            line-height: 1.35;
+            margin-top: 6px;
         }
 
         .summary-snapshot-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin: 6px 0;
         }
         .summary-tile {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
-            padding: 10px 14px;
+            border-radius: 10px;
+            padding: 8px 10px;
         }
         .summary-tile-lbl {
-            font-size: 0.7em;
+            font-size: 0.68em;
             font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
         }
         .summary-tile-val {
-            font-size: 1.1em;
+            font-size: 1.05em;
             font-weight: 800;
             color: #ffffff;
             margin-top: 2px;
@@ -1131,39 +1282,76 @@
             white-space: nowrap;
         }
 
-        /* Botones de acción en parte inferior del Wrapped */
-        .wrapped-actions-bottom {
+        /* Centro de Exportación y Descargas al final del Wrapped */
+        .wrapped-export-hub {
+            margin-top: auto;
             display: flex;
+            flex-direction: column;
             gap: 8px;
-            z-index: 50;
-            margin-top: 12px;
+            z-index: 1000 !important;
+            position: relative;
+            pointer-events: auto !important;
         }
-        .btn-wrap-action {
-            flex: 1;
-            padding: 10px 12px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            color: #ffffff;
-            font-size: 0.85em;
-            font-weight: 700;
+        .btn-export-large {
+            width: 100%;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: #06141f;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-weight: 800;
+            font-size: 0.92em;
             cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 1001 !important;
+            pointer-events: auto !important;
         }
-        .btn-wrap-action:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-1px);
+        .btn-export-large:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(34, 197, 94, 0.5);
         }
-        .btn-wrap-action.primary-glow {
-            background: var(--accent-green);
-            color: #0a0f1d;
-            border-color: var(--accent-green);
-            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+        .btn-export-large:disabled, .btn-export-sub:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
-
-    </style>
+        .btn-export-sub {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(8px);
+            color: #ffffff;
+            border-radius: 10px;
+            padding: 9px 8px;
+            font-weight: 700;
+            font-size: 0.8em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 1001 !important;
+            pointer-events: auto !important;
+        }
+        .btn-export-sub:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.22);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+        .btn-export-sub.restart-btn {
+            flex: 0 0 auto;
+            padding: 9px 12px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+</style>
 </head>
 <body>
 
@@ -1233,6 +1421,9 @@
                             <a href="/force_sync" class="btn btn-warning" style="padding: 10px 18px; font-weight: 700;">
                                 🔄 Forzar Sincronización
                             </a>
+                            <button id="btnQbitRefresh" onclick="forceQbitRefresh()" class="btn btn-secondary" style="padding: 10px 18px; font-weight: 700;" title="Fuerza inicio (ignora cola) y recomunica rastreadores en qBittorrent">
+                                ⚡ Forzar qBittorrent
+                            </button>
                         </div>
                     </div>
 
@@ -1658,6 +1849,31 @@
             }, 1800);
         }
 
+        async function forceQbitRefresh() {
+            const btn = document.getElementById('btnQbitRefresh');
+            const originalText = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⚡ Forzando...';
+            }
+            try {
+                const res = await fetch('/api/qbit/force-refresh', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`✅ qBittorrent actualizado:\n${data.forced_count} torrents forzados e iniciados.\nRecomunicación enviada a todos los rastreadores.`);
+                } else {
+                    alert(`⚠️ Error en qBittorrent:\n${data.error || 'Error desconocido'}`);
+                }
+            } catch (err) {
+                alert(`❌ Error al conectar con el servidor: ${err.message}`);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            }
+        }
+
         // Si ya hay un lote ejecutándose en segundo plano al cargar la página, se engancha automáticamente
         document.addEventListener('DOMContentLoaded', () => {
             fetch('/send_all_lidarr_status')
@@ -1883,7 +2099,7 @@
         function formatRelativeTime(date) {
             const now = new Date();
             const diffSec = Math.floor((now - date) / 1000);
-            if (diffSec < 60) return "Justo ahora";
+            if (diffSec < 60 || diffSec > -120 && diffSec < 0) return "Justo ahora";
             const diffMin = Math.floor(diffSec / 60);
             if (diffMin < 60) return `Hace ${diffMin} min`;
             const diffHours = Math.floor(diffMin / 60);
@@ -1925,32 +2141,34 @@
         }
     </script>
 
-    <!-- ================= MODAL VERTICAL MUSIC WRAPPED 9:16 ================= -->
+    <!-- ================= MODAL VERTICAL MUSIC WRAPPED 9:16 (9 HISTORIAS) ================= -->
     <div id="wrappedModal" class="wrapped-modal-overlay" style="display: none;">
         <div class="wrapped-container" id="wrappedContainer">
             
-            <!-- Barra de Progreso Segmentada (5 diapositivas) -->
+            <!-- Barra de Progreso Segmentada (9 diapositivas) -->
             <div class="wrapped-progress-bar no-hold">
                 <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-0"></div></div>
                 <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-1"></div></div>
                 <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-2"></div></div>
                 <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-3"></div></div>
                 <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-4"></div></div>
+                <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-5"></div></div>
+                <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-6"></div></div>
+                <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-7"></div></div>
+                <div class="wrapped-prog-segment"><div class="wrapped-prog-fill" id="prog-seg-8"></div></div>
             </div>
 
             <!-- Botón cerrar [✕] -->
             <button class="wrapped-close-btn no-hold" onclick="closeMusicWrapped()" title="Cerrar Wrapped">✕</button>
 
+            <!-- Flechas de Navegación de Historias -->
+            <button class="wrapped-nav-arrow left-arrow no-hold" onclick="handleWrappedNav(event, 'prev')" title="Anterior">‹</button>
+            <button class="wrapped-nav-arrow right-arrow no-hold" onclick="handleWrappedNav(event, 'next')" title="Siguiente">›</button>
+
             <!-- Indicador visual de Pausa -->
             <div class="wrapped-pause-indicator" id="wrappedPauseIndicator">⏸ Pausa</div>
 
-            <!-- Zonas táctiles para avanzar / retroceder -->
-            <div class="wrapped-touch-zones">
-                <div class="wrapped-touch-left" onclick="handleWrappedTap(event, 'prev')"></div>
-                <div class="wrapped-touch-right" onclick="handleWrappedTap(event, 'next')"></div>
-            </div>
-
-            <!-- DIAPOSITIVA 1: VOLUMEN SÓNICO -->
+            <!-- ================= SLIDE 0: VOLUMEN SÓNICO ================= -->
             <div class="wrapped-slide active" id="wrapped-slide-0">
                 <div class="wrapped-bg-animated bg-aurora"></div>
                 <div class="slide-content">
@@ -1971,12 +2189,12 @@
                         <div class="stat-pill">
                             <span class="stat-pill-icon">📅</span>
                             <div class="stat-pill-val" id="wrapVolDays">0 d</div>
-                            <div class="stat-pill-lbl">Días continuos</div>
+                            <div class="stat-pill-lbl">Días seguidos</div>
                         </div>
                         <div class="stat-pill">
                             <span class="stat-pill-icon">🎵</span>
                             <div class="stat-pill-val" id="wrapVolSongs">0</div>
-                            <div class="stat-pill-lbl">Temas únicos</div>
+                            <div class="stat-pill-lbl">Canciones</div>
                         </div>
                     </div>
 
@@ -1984,13 +2202,9 @@
                         "Tu biblioteca no descansa. Estás en la cima de la fidelidad auditiva."
                     </div>
                 </div>
-                <div class="wrapped-actions-bottom no-hold">
-                    <button class="btn-wrap-action" onclick="exportWrappedGif(0)">📥 Guardar GIF</button>
-                    <button class="btn-wrap-action" onclick="exportWrappedImage(0)">📸 Guardar Historia</button>
-                </div>
             </div>
 
-            <!-- DIAPOSITIVA 2: TU TEMA EN BUCLE -->
+            <!-- ================= SLIDE 1: TU TEMA EN BUCLE ================= -->
             <div class="wrapped-slide" id="wrapped-slide-1">
                 <div class="wrapped-bg-animated bg-lavalamp"></div>
                 <div class="slide-content">
@@ -2012,31 +2226,60 @@
                         </div>
                     </div>
                 </div>
-                <div class="wrapped-actions-bottom no-hold">
-                    <button class="btn-wrap-action" onclick="exportWrappedGif(1)">📥 Guardar GIF</button>
-                    <button class="btn-wrap-action" onclick="exportWrappedImage(1)">📸 Guardar Historia</button>
-                </div>
             </div>
 
-            <!-- DIAPOSITIVA 3: TOP 5 DE ARTISTAS -->
+            <!-- ================= SLIDE 2: TOP 5 CANCIONES ================= -->
             <div class="wrapped-slide" id="wrapped-slide-2">
                 <div class="wrapped-bg-animated bg-synthwave"></div>
                 <div class="slide-content">
-                    <div class="slide-header-badge">👑 TU TOP 5 DEL PODIO</div>
-                    <div class="slide-stagger-1 slide-main-title">Los que nunca salieron de tus listas</div>
+                    <div class="slide-header-badge">🎵 EL PODIO DE CANCIONES</div>
+                    <div class="slide-stagger-1 slide-main-title">Tus 5 himnos indiscutibles</div>
 
-                    <div id="wrapTopArtistsList" class="slide-stagger-2 top-ranking-list">
+                    <div id="wrapTopSongsList" class="slide-stagger-2 top-ranking-list">
                         <!-- Rellenado dinámicamente -->
                     </div>
                 </div>
-                <div class="wrapped-actions-bottom no-hold">
-                    <button class="btn-wrap-action" onclick="exportWrappedGif(2)">📥 Guardar GIF</button>
-                    <button class="btn-wrap-action" onclick="exportWrappedImage(2)">📸 Guardar Historia</button>
+            </div>
+
+            <!-- ================= SLIDE 3: TOP 5 ARTISTAS ================= -->
+            <div class="wrapped-slide" id="wrapped-slide-3">
+                <div class="wrapped-bg-animated bg-synthwave"></div>
+                <div class="slide-content">
+                    <div class="slide-header-badge">👑 LOS REYES DE TUS AURICULARES</div>
+                    <div class="slide-stagger-1 slide-main-title">Los artistas que dominaron tus listas</div>
+
+                    <div id="wrapTopArtistsList" class="slide-stagger-2 top-ranking-list">
+                        <!-- Rellenado dinámicamente con ecualizador -->
+                    </div>
                 </div>
             </div>
 
-            <!-- DIAPOSITIVA 4: RITMO BIOLÓGICO -->
-            <div class="wrapped-slide" id="wrapped-slide-3">
+            <!-- ================= SLIDE 4: TU ÁLBUM ESTRELLA ================= -->
+            <div class="wrapped-slide" id="wrapped-slide-4">
+                <div class="wrapped-bg-animated bg-aurora"></div>
+                <div class="slide-content">
+                    <div class="slide-header-badge">💿 TU ÁLBUM ESTRELLA</div>
+                    <div class="slide-stagger-1 slide-main-title">El disco que escuchaste de principio a fin</div>
+
+                    <div class="slide-stagger-2 album-hero-showcase">
+                        <div class="album-3d-case">
+                            <img id="wrapAlbumCover" class="album-hero-img" src="" alt="Album Cover" crossorigin="anonymous">
+                            <div class="album-case-reflection"></div>
+                        </div>
+                    </div>
+
+                    <div class="slide-stagger-3 song-details-card">
+                        <div id="wrapAlbumTitle" class="song-title-hero">Álbum</div>
+                        <div id="wrapAlbumArtist" class="song-artist-hero">Artista</div>
+                        <div class="song-badge-plays">
+                            <span id="wrapAlbumPlays" style="color: #38bdf8; font-weight: 800; font-size: 1.15em;">0</span> reproducciones acumuladas
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= SLIDE 5: RITMO BIOLÓGICO Y HÁBITOS ================= -->
+            <div class="wrapped-slide" id="wrapped-slide-5">
                 <div class="wrapped-bg-animated bg-pulse"></div>
                 <div class="slide-content">
                     <div class="slide-header-badge">⚡ RITMO BIOLÓGICO</div>
@@ -2055,8 +2298,19 @@
                         </div>
                     </div>
 
-                    <div class="slide-stagger-3 day-rhythm-wrapper">
-                        <div style="font-size: 0.75em; color: var(--text-muted); text-align: center; margin-bottom: 8px; font-weight: 700; letter-spacing: 0.5px;">
+                    <div class="slide-stagger-3 habit-comparison-box">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.82em; font-weight: 700; margin-bottom: 6px;">
+                            <span>🏢 Entre Semana: <b id="wrapWeekdayPct" style="color: #38bdf8;">78%</b></span>
+                            <span>🎉 Finde: <b id="wrapWeekendPct" style="color: #a855f7;">22%</b></span>
+                        </div>
+                        <div style="height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; display: flex;">
+                            <div id="wrapWeekdayBar" style="width: 78%; background: linear-gradient(90deg, #38bdf8, #0284c7);"></div>
+                            <div id="wrapWeekendBar" style="width: 22%; background: linear-gradient(90deg, #a855f7, #ec4899);"></div>
+                        </div>
+                    </div>
+
+                    <div class="slide-stagger-4 day-rhythm-wrapper" style="margin-top: 10px;">
+                        <div style="font-size: 0.72em; color: var(--text-muted); text-align: center; margin-bottom: 6px; font-weight: 700; letter-spacing: 0.5px;">
                             FRECUENCIA POR HORAS (00:00 - 23:00)
                         </div>
                         <div id="wrapHourlyBars" class="hourly-bars-flex">
@@ -2064,18 +2318,94 @@
                         </div>
                     </div>
                 </div>
-                <div class="wrapped-actions-bottom no-hold">
-                    <button class="btn-wrap-action" onclick="exportWrappedGif(3)">📥 Guardar GIF</button>
-                    <button class="btn-wrap-action" onclick="exportWrappedImage(3)">📸 Guardar Historia</button>
+            </div>
+
+            <!-- ================= SLIDE 6: EL DÍA MÁS MUSICAL ================= -->
+            <div class="wrapped-slide" id="wrapped-slide-6">
+                <div class="wrapped-bg-animated bg-fire"></div>
+                <div class="slide-content">
+                    <div class="slide-header-badge">🔥 EL DÍA MÁS MUSICAL</div>
+                    <div class="slide-stagger-1 slide-main-title">La jornada que rompiste todos los récords</div>
+
+                    <div class="slide-stagger-2 records-hero-wrap">
+                        <div id="wrapRecordDayDate" class="records-badge-date">📅 21 de Abril de 2026</div>
+                        <div id="wrapRecordDayCount" class="counter-huge" style="color: #fdba74; text-shadow: 0 0 35px rgba(234, 88, 12, 0.6);">0</div>
+                        <div class="counter-hero-label" style="color: #ea580c;">CANCIONES EN UN SOLO DÍA</div>
+                    </div>
+
+                    <div class="slide-stagger-3 records-metric-grid">
+                        <div class="record-pill">
+                            <div class="record-pill-val" id="wrapActiveDays">0 d</div>
+                            <div class="record-pill-lbl">Días con música</div>
+                        </div>
+                        <div class="record-pill">
+                            <div class="record-pill-val" id="wrapDailyAvg">0</div>
+                            <div class="record-pill-lbl">Media / día activo</div>
+                        </div>
+                    </div>
+
+                    <div class="slide-stagger-4 slide-footer-quote">
+                        "Ese día tu energía musical fue legendaria. No pararon de sonar temas en todo el día."
+                    </div>
                 </div>
             </div>
 
-            <!-- DIAPOSITIVA 5: RESUMEN Y ARQUETIPO -->
-            <div class="wrapped-slide" id="wrapped-slide-4">
+            <!-- ================= SLIDE 7: BRÚJULA SÓNICA & HORARIOS ================= -->
+            <div class="wrapped-slide" id="wrapped-slide-7">
+                <div class="wrapped-bg-animated bg-cosmic"></div>
+                <div class="slide-content">
+                    <div class="slide-header-badge">🧭 TU BRÚJULA SÓNICA</div>
+                    <div class="slide-stagger-1 slide-main-title">Tu momento sagrado para la música</div>
+
+                    <div class="slide-stagger-2 dominant-slot-hero">
+                        ☀️ Tu franja predilecta: <b id="wrapTopSlotName" style="color: #38bdf8;">Tarde</b> (<span id="wrapTopSlotPct">40%</span> de tus escuchas)
+                    </div>
+
+                    <div class="slide-stagger-3 slots-breakdown-list">
+                        <div class="slot-row">
+                            <span style="width: 80px;">🌅 Mañana</span>
+                            <div class="slot-bar-track"><div id="barSlotManana" class="slot-bar-fill" style="width: 35%;"></div></div>
+                            <span id="cntSlotManana" style="width: 55px; text-align: right; color: #94a3b8;">1.515</span>
+                        </div>
+                        <div class="slot-row">
+                            <span style="width: 80px;">☀️ Tarde</span>
+                            <div class="slot-bar-track"><div id="barSlotTarde" class="slot-bar-fill" style="width: 40%; background: linear-gradient(90deg, #f59e0b, #eab308);"></div></div>
+                            <span id="cntSlotTarde" style="width: 55px; text-align: right; color: #fde047;">1.726</span>
+                        </div>
+                        <div class="slot-row">
+                            <span style="width: 80px;">🌆 Noche</span>
+                            <div class="slot-bar-track"><div id="barSlotNoche" class="slot-bar-fill" style="width: 22%; background: linear-gradient(90deg, #8b5cf6, #a855f7);"></div></div>
+                            <span id="cntSlotNoche" style="width: 55px; text-align: right; color: #c084fc;">966</span>
+                        </div>
+                        <div class="slot-row">
+                            <span style="width: 80px;">🌌 Madrugada</span>
+                            <div class="slot-bar-track"><div id="barSlotMadrugada" class="slot-bar-fill" style="width: 3%; background: linear-gradient(90deg, #0284c7, #38bdf8);"></div></div>
+                            <span id="cntSlotMadrugada" style="width: 55px; text-align: right; color: #38bdf8;">69</span>
+                        </div>
+                    </div>
+
+                    <div class="slide-stagger-4" style="margin-top: auto; display: flex; gap: 8px;">
+                        <div class="stat-pill" style="flex: 1;">
+                            <span class="stat-pill-icon">🎨</span>
+                            <div class="stat-pill-val" id="wrapDiversityArtists">0</div>
+                            <div class="stat-pill-lbl">Artistas explorados</div>
+                        </div>
+                        <div class="stat-pill" style="flex: 1;">
+                            <span class="stat-pill-icon">🎶</span>
+                            <div class="stat-pill-val" id="wrapDiversitySongs">0</div>
+                            <div class="stat-pill-lbl">Temas únicos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= SLIDE 8: GRAN FINAL & CENTRO DE DESCARGAS ================= -->
+            <div class="wrapped-slide" id="wrapped-slide-8">
                 <div class="wrapped-bg-animated bg-hologram"></div>
-                <div class="slide-content" style="justify-content: flex-start; gap: 12px;">
+                <div class="slide-content" style="justify-content: flex-start; gap: 8px;">
                     <div class="slide-header-badge">🌟 TU IDENTIDAD MUSICAL</div>
 
+                    <!-- Insignia Arquetipo -->
                     <div class="slide-stagger-1 archetype-badge-box">
                         <div id="wrapArchetypeEmoji" class="archetype-emoji">🔁</div>
                         <div id="wrapArchetypeTitle" class="archetype-title">Adicto al Bucle</div>
@@ -2083,6 +2413,7 @@
                         <div id="wrapArchetypeDesc" class="archetype-desc">...</div>
                     </div>
 
+                    <!-- Resumen de Estadísticas en cuadrícula -->
                     <div class="slide-stagger-2 summary-snapshot-grid">
                         <div class="summary-tile">
                             <div class="summary-tile-lbl">Minutos</div>
@@ -2093,42 +2424,339 @@
                             <div id="wrapSumSongs" class="summary-tile-val">-</div>
                         </div>
                         <div class="summary-tile" style="grid-column: span 2;">
-                            <div class="summary-tile-lbl">Canción Más Quemada</div>
-                            <div id="wrapSumTopSong" class="summary-tile-val" style="font-size: 0.9em;">-</div>
+                            <div class="summary-tile-lbl">Canción Insignia</div>
+                            <div id="wrapSumTopSong" class="summary-tile-val" style="font-size: 0.88em;">-</div>
                         </div>
                     </div>
 
-                    <div class="slide-stagger-3" style="text-align: center; margin-top: auto;">
-                        <span style="font-size: 0.72em; letter-spacing: 2px; color: rgba(255,255,255,0.4); font-weight: 700;">
+                    <!-- CENTRO DE DESCARGAS (Todos los botones reunidos aquí) -->
+                    <div class="slide-stagger-3 wrapped-export-hub no-hold">
+                        <button id="btnDownloadAllPng" class="btn-export-large" onclick="downloadAllStoriesPng()">
+                            <span>📸 Descargar Todas las Historias (Pack PNG)</span>
+                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="btnExportGif" class="btn-export-sub" onclick="downloadWrappedGif()">
+                                <span>📥 Descargar GIF</span>
+                            </button>
+                            <button id="btnExportImg" class="btn-export-sub" onclick="downloadSummaryCardPng()">
+                                <span>🖼️ Tarjeta Resumen</span>
+                            </button>
+                            <button class="btn-export-sub restart-btn" onclick="restartWrapped()">
+                                <span>🔄 Repetir</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: auto; padding-top: 4px;">
+                        <span style="font-size: 0.7em; letter-spacing: 2px; color: rgba(255,255,255,0.4); font-weight: 700;">
                             RADIO MONITOR & NAVIDROME • 2026
                         </span>
                     </div>
-                </div>
-                <div class="wrapped-actions-bottom no-hold" style="margin-top: 10px;">
-                    <button id="btnExportGif" class="btn-wrap-action primary-glow" onclick="exportWrappedGif(4)">
-                        📥 Descargar GIF
-                    </button>
-                    <button id="btnExportImg" class="btn-wrap-action" onclick="exportWrappedImage(4)">
-                        📸 Guardar Historia
-                    </button>
                 </div>
             </div>
 
         </div>
     </div>
-
-
-    <!-- ================= CONTROLLER INTERACTIVO MUSIC WRAPPED ================= -->
+\n    <!-- ================= CONTROLLER INTERACTIVO MUSIC WRAPPED (9 HISTORIAS CON TEMAS DINÁMICOS Y ALEATORIOS) ================= -->
     <script>
         let wrappedData = null;
         let wrappedCurrentSlide = 0;
-        const WRAPPED_TOTAL_SLIDES = 5;
+        const WRAPPED_TOTAL_SLIDES = 9;
         const WRAPPED_SLIDE_DURATION = 5500; // 5.5s por diapositiva
         let wrappedSlideStartTime = 0;
         let wrappedSlidePausedTime = 0;
         let wrappedIsPaused = false;
         let wrappedProgressFrame = null;
         let wrappedHoldTimer = null;
+
+        const DEFAULT_COVER_SVG = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Crect width='300' height='300' fill='%231e293b'/%3E%3Ccircle cx='150' cy='150' r='60' fill='%230f172a' stroke='%2322c55e' stroke-width='4'/%3E%3Ctext x='50%25' y='52%25' dominant-baseline='middle' text-anchor='middle' fill='%2322c55e' font-size='48'%3E%E2%99%AC%3C/text%3E%3C/svg%3E";
+
+        function getProxiedImageUrl(url) {
+            if (!url) return DEFAULT_COVER_SVG;
+            if (url.startsWith('data:')) return url;
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                return '/api/proxy-image?url=' + encodeURIComponent(url);
+            }
+            return url;
+        }
+
+        // ================= PALETAS Y FONDOS ALEATORIOS DINÁMICOS =================
+        const WRAPPED_GRADIENT_PALETTES = [
+            { name: "Aurora Boreal", bg: "linear-gradient(-45deg, #09152a 0%, #172554 25%, #064e3b 60%, #0c4a6e 100%)", accent: "#22c55e" },
+            { name: "Lava Lamp", bg: "linear-gradient(135deg, #1e092b 0%, #581c87 35%, #831843 70%, #1f0b2e 100%)", accent: "#f43f5e" },
+            { name: "Synthwave Sunset", bg: "linear-gradient(160deg, #0f172a 0%, #1e1b4b 40%, #0369a1 75%, #be185d 100%)", accent: "#38bdf8" },
+            { name: "Cyberpunk Neon", bg: "linear-gradient(135deg, #180528 0%, #701a75 35%, #ec4899 70%, #06b6d4 100%)", accent: "#ec4899" },
+            { name: "Magma Blaze", bg: "linear-gradient(135deg, #450a0a 0%, #831843 35%, #ea580c 70%, #1e1b4b 100%)", accent: "#fb923c" },
+            { name: "Cosmic Nebula", bg: "linear-gradient(135deg, #0f172a 0%, #31104b 40%, #047857 75%, #0284c7 100%)", accent: "#a855f7" },
+            { name: "Acid Lime & Teal", bg: "linear-gradient(-45deg, #042f2e 0%, #0f766e 35%, #84cc16 70%, #0f172a 100%)", accent: "#84cc16" },
+            { name: "Solar Flare", bg: "linear-gradient(-135deg, #1f0b24 0%, #9d174d 35%, #f97316 70%, #0b0f19 100%)", accent: "#f97316" },
+            { name: "Oceanic Pulse", bg: "linear-gradient(-60deg, #090e1a 0%, #1e1e38 35%, #1e3a8a 70%, #064e3b 100%)", accent: "#22d3ee" },
+            { name: "Golden Amber", bg: "linear-gradient(135deg, #1c1917 0%, #78350f 35%, #eab308 70%, #0f172a 100%)", accent: "#eab308" },
+            { name: "Ultra Violet Dream", bg: "linear-gradient(-45deg, #172554 0%, #6d28d9 35%, #f43f5e 70%, #020617 100%)", accent: "#c084fc" },
+            { name: "Emerald Mystic", bg: "linear-gradient(145deg, #022c22 0%, #065f46 35%, #10b981 70%, #09152a 100%)", accent: "#10b981" },
+            { name: "Toxic Candy", bg: "linear-gradient(120deg, #052e16 0%, #065f46 30%, #ec4899 75%, #180528 100%)", accent: "#4ade80" },
+            { name: "Midnight Diamond", bg: "linear-gradient(135deg, #090d16 0%, #1e293b 35%, #3b82f6 70%, #020617 100%)", accent: "#60a5fa" }
+        ];
+
+        // ================= POOL DE FRASES Y TITULARES ALEATORIOS =================
+        const WRAPPED_RANDOM_TEXTS = {
+            slide0: {
+                badges: ["✨ TU VOLUMEN SÓNICO", "🔊 IMPACTO AUDITIVO", "⚡ DOSIS DE DECIBELIOS", "🎶 TU AÑO EN MINUTOS", "🚀 FIDELIDAD MÁXIMA"],
+                titles: [
+                    "Has vivido un año cargado de ritmo",
+                    "Tus oídos han trabajado horas extras",
+                    "Una banda sonora continua para tu vida",
+                    "Si escuchar música fuera deporte olímpico, tendrías oro",
+                    "Tus altavoces prácticamente no han tocado la pausa",
+                    "El volumen en tu mundo nunca baja"
+                ],
+                quotes: [
+                    "Tu biblioteca no descansa. Estás en la cima de la fidelidad auditiva.",
+                    "El silencio es oro, pero tus altavoces prefieren discos de platino.",
+                    "Tus vecinos probablemente se saben ya todas tus canciones favoritas.",
+                    "Musicalizaste prácticamente cada segundo de tu día a día.",
+                    "Pocos entienden lo que es vivir pegado a unos auriculares como tú.",
+                    "Donde otros escuchan silencio, tú creas una experiencia sonora inolvidable."
+                ]
+            },
+            slide1: {
+                badges: ["🔁 TU TEMA EN BUCLE", "🔥 OBSESIÓN REPETITIVA", "💎 TU HIMNO PERSONAL", "🎯 EN EL BLANCO", "🌪️ TORNADO EN REPEAT"],
+                titles: [
+                    "La canción que no pudiste dejar de repetir",
+                    "Tu mayor adicción sonora del año",
+                    "¿Te pagaron regalías por escucharla tanto?",
+                    "Tus neuronas hicieron sinapsis al ritmo de este temazo",
+                    "Hubo un momento en que esta canción era tu religión",
+                    "El botón de bucle echó humo con este temazo"
+                ],
+                playsFmt: [
+                    "Sonó nada menos que {count} veces",
+                    "Explotó tus altavoces {count} veces",
+                    "En bucle infinito: {count} escuchas",
+                    "La gozaste a fondo {count} veces",
+                    "Repetida sin piedad {count} veces"
+                ]
+            },
+            slide2: {
+                badges: ["🎵 EL PODIO DE CANCIONES", "🏆 TU TOP 5 SAGRADO", "⭐ LA ÉLITE DE TU PLAYLIST", "👑 TUS 5 INDISCUTIBLES", "🎖️ LOS 5 TEMAZOS SUPREMOS"],
+                titles: [
+                    "Tus 5 himnos indiscutibles",
+                    "El quinteto que gobernó tus días",
+                    "Las canciones que definieron tu personalidad",
+                    "Tus temas de cabecera que nunca fallaron",
+                    "Las cinco piezas maestras que más sonaron",
+                    "El pentagrama perfecto de tu año"
+                ]
+            },
+            slide3: {
+                badges: ["👑 LOS REYES DE TUS AURICULARES", "🎸 EL OLIMPO MUSICAL", "⚡ TUS PROVEEDORES DE DOPAMINA", "🌟 LAS VOCES DE TU VIDA", "🔥 DOMINIO DISCOGRÁFICO"],
+                titles: [
+                    "Los artistas que dominaron tus listas",
+                    "Si hicieran un festival juntos, pagarías lo que fuera",
+                    "Tus mayores referentes auditivos del año",
+                    "La realeza musical que conquistó tu biblioteca",
+                    "Los nombres propios que más alegraron tus días",
+                    "Los genios detrás de tu banda sonora"
+                ]
+            },
+            slide4: {
+                badges: ["💿 TU ÁLBUM ESTRELLA", "💎 LA JOYA EN FORMATO LP", "✨ OBRA MAESTRA COMPLETA", "🪐 VIAJE DISCOGRÁFICO", "🏆 VINILO DE PLATINO"],
+                titles: [
+                    "El disco que escuchaste de principio a fin",
+                    "Una obra maestra sin canciones de relleno",
+                    "El vinilo virtual que desgastaste a fondo",
+                    "Poner este álbum es como llegar a casa",
+                    "Tu refugio sonoro favorito en formato LP",
+                    "Un viaje conceptual que viviste al 100%"
+                ],
+                playsFmt: [
+                    "{count} reproducciones acumuladas",
+                    "Un total de {count} escuchas completas",
+                    "Lo hiciste girar {count} veces",
+                    "Gozado de principio a fin {count} veces",
+                    "Nada menos que {count} vueltas al disco"
+                ]
+            },
+            slide5: {
+                badges: ["⚡ RITMO BIOLÓGICO", "⏰ TU CRONOMETRÍA SONORA", "🧬 TU ADN MUSICAL", "🔬 LA CIENCIA DE TU OÍDO", "📊 SINCRONIZACIÓN PERFECTA"],
+                titles: [
+                    "Tu sincronía perfecta con el sonido",
+                    "El reloj biológico de tu inspiración",
+                    "Tus hábitos tienen un patrón fascinante",
+                    "La melodía de tus horas más activas",
+                    "Tu cerebro musical tiene horario fijo",
+                    "La hora bruja en que la música te llama"
+                ]
+            },
+            slide6: {
+                badges: ["🔥 EL DÍA MÁS MUSICAL", "💥 MARATÓN SALVAJE", "⚡ HITO HISTÓRICO", "🚀 RÉCORD ABSOLUTO", "🏆 LA JORNADA LEGENDARIA"],
+                titles: [
+                    "La jornada que rompiste todos los récords",
+                    "El día que no te despegaste de los altavoces",
+                    "¿Qué pasó ese día? ¡Una auténtica locura sonora!",
+                    "Un concierto privado de 24 horas continuas",
+                    "Tu mayor maratón auditiva del año",
+                    "El día que la música tomó el control total"
+                ],
+                quotes: [
+                    "Ese día tu energía musical fue legendaria. No hubo un solo minuto de silencio.",
+                    "¿Quién necesita pausas cuando la playlist está tan buena?",
+                    "Ese día desafiaste todas las leyes de la resistencia auditiva.",
+                    "Una sesión maratoniana que pasará a los anales de tu historia musical.",
+                    "24 horas de ritmo incesante. Ese día el mundo sonó solo para ti."
+                ]
+            },
+            slide7: {
+                badges: ["🧭 TU BRÚJULA SÓNICA", "🌅 TU MOMENTO SAGRADO", "🌌 ATMÓSFERA Y CLIMA", "🎨 TU EXPLORACIÓN SONORA", "🗺️ NAVEGACIÓN MUSICAL"],
+                titles: [
+                    "Tu momento sagrado para la música",
+                    "Tu brújula musical siempre apunta aquí",
+                    "El ambiente donde mejor florece tu lista",
+                    "La atmósfera perfecta para tus escuchas",
+                    "¿Cuándo se enciende tu alma melómana?",
+                    "El ecosistema perfecto donde tu mente se desconecta"
+                ]
+            },
+            slide8: {
+                badges: ["🌟 TU IDENTIDAD MUSICAL", "🔮 TU ARQUETIPO AUDITIVO", "👑 TU VEREDICTO FINAL", "⚡ TU PERFIL SONORO", "🏆 INSIGNIA DE HONOR"]
+            }
+        };
+
+        // Arquetipos dinámicos aleatorios según personalidad
+        const DYNAMIC_ARCHETYPES = {
+            loop: [
+                { emoji: "🔁", title: "Adicto al Bucle", subtitle: "Cuando una canción te atrapa, no hay escapatoria", desc: "Explotas tus temas favoritos hasta la saciedad. ¡Tu tema estrella sonó como un himno continuo!" },
+                { emoji: "♾️", title: "El Alquimista del Bucle", subtitle: "Transformas cada canción en tu mantra diario", desc: "No cambias de pista hasta que te sabes los coros, la batería y la respiración del cantante." },
+                { emoji: "🔂", title: "Eterno Repetidor", subtitle: "El botón de bucle infinito es tu mejor aliado", desc: "¿Descubrir algo nuevo? Quizás mañana. Hoy toca disfrutar de tu tema insignia una y otra vez." },
+                { emoji: "👑", title: "El Monarca del Repeat", subtitle: "La fidelidad auditiva llevada a su máxima expresión", desc: "Para ti, escuchar una canción decenas de veces no es exagerar: es el mínimo indispensable para entrar en trance." }
+            ],
+            night: [
+                { emoji: "🌙", title: "Noctámbulo Sónico", subtitle: "La noche es tu hábitat natural", desc: "Tus mayores sesiones de escucha suceden cuando el mundo duerme y la ciudad descansa." },
+                { emoji: "🦉", title: "El Búho del Groove", subtitle: "Las mejores frecuencias florecen a deshoras", desc: "Mientras otros descansan, tus auriculares siguen iluminando la oscuridad." },
+                { emoji: "🌌", title: "Astronauta Nocturno", subtitle: "Navegante de ondas cósmicas", desc: "Tu inspiración y tus mejores listas cobran vida a altas horas de la noche." }
+            ],
+            explorer: [
+                { emoji: "🧭", title: "Explorador Musical", subtitle: "Un apetito insaciable por nuevos sonidos", desc: "Navegaste por cientos de artistas diferentes sin miedo a ningún género ni época." },
+                { emoji: "🚀", title: "Cazador de Frecuencias", subtitle: "Ningún rincón auditivo escapa a tu radar", desc: "Tu curiosidad musical desafía cualquier algoritmo: siempre en busca del próximo descubrimiento." },
+                { emoji: "🗺️", title: "Cartógrafo Sónico", subtitle: "Trazando mapas en el universo de la música", desc: "Tu biblioteca es una enciclopedia viva con cientos de propuestas y artistas únicos." }
+            ],
+            pure: [
+                { emoji: "🎧", title: "Melómano Puro", subtitle: "La música es tu banda sonora vital", desc: "Disfrutas con constancia y fidelidad absoluta. Cientos de horas acumuladas de pura inmersión auditiva." },
+                { emoji: "⚡", title: "El Gurú del Groove", subtitle: "Sientes el compás en cada paso del día", desc: "La música no es tu pasatiempo: es tu oxígeno diario y tu motor de energía." },
+                { emoji: "💎", title: "Arquitecto Auditivo", subtitle: "Construyendo días perfectos a base de buen sonido", desc: "Tu constancia musical demuestra que sabes apreciar cada matiz de una buena melodía." }
+            ]
+        };
+
+        function pickRandom(arr) {
+            if (!arr || arr.length === 0) return "";
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        // ================= RANDOMIZADOR DE TEMA, COLORES Y FRASES =================
+        function randomizeWrappedTheme(data) {
+            // Barajar los gradientes animados fluidos para las 9 historias
+            const shuffledPalettes = [...WRAPPED_GRADIENT_PALETTES].sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < WRAPPED_TOTAL_SLIDES; i++) {
+                const slide = document.getElementById(`wrapped-slide-${i}`);
+                if (!slide) continue;
+
+                const palette = shuffledPalettes[i % shuffledPalettes.length];
+                const bgEl = slide.querySelector('.wrapped-bg-animated');
+                if (bgEl) {
+                    bgEl.className = 'wrapped-bg-animated';
+                    bgEl.style.background = palette.bg;
+                    const duration = Math.floor(9 + Math.random() * 6);
+                    bgEl.style.animation = `auroraMotion ${duration}s ease infinite`;
+                }
+
+                // Acento aleatorio en el borde del badge y resplandor
+                const badge = slide.querySelector('.slide-header-badge');
+                if (badge) {
+                    badge.style.borderColor = palette.accent + '88';
+                    badge.style.boxShadow = `0 0 15px ${palette.accent}33`;
+                }
+
+                // Resplandor en contadores grandes
+                const counterHuge = slide.querySelector('.counter-huge');
+                if (counterHuge && i !== 6) {
+                    counterHuge.style.textShadow = `0 0 35px ${palette.accent}77`;
+                }
+            }
+
+            // Slide 0: Volumen
+            const s0 = WRAPPED_RANDOM_TEXTS.slide0;
+            const slide0 = document.getElementById('wrapped-slide-0');
+            if (slide0) {
+                slide0.querySelector('.slide-header-badge').innerText = pickRandom(s0.badges);
+                slide0.querySelector('.slide-main-title').innerText = pickRandom(s0.titles);
+                slide0.querySelector('.slide-footer-quote').innerText = pickRandom(s0.quotes);
+            }
+
+            // Slide 1: Bucle
+            const s1 = WRAPPED_RANDOM_TEXTS.slide1;
+            const slide1 = document.getElementById('wrapped-slide-1');
+            if (slide1) {
+                slide1.querySelector('.slide-header-badge').innerText = pickRandom(s1.badges);
+                slide1.querySelector('.slide-main-title').innerText = pickRandom(s1.titles);
+            }
+
+            // Slide 2: Canciones
+            const s2 = WRAPPED_RANDOM_TEXTS.slide2;
+            const slide2 = document.getElementById('wrapped-slide-2');
+            if (slide2) {
+                slide2.querySelector('.slide-header-badge').innerText = pickRandom(s2.badges);
+                slide2.querySelector('.slide-main-title').innerText = pickRandom(s2.titles);
+            }
+
+            // Slide 3: Artistas
+            const s3 = WRAPPED_RANDOM_TEXTS.slide3;
+            const slide3 = document.getElementById('wrapped-slide-3');
+            if (slide3) {
+                slide3.querySelector('.slide-header-badge').innerText = pickRandom(s3.badges);
+                slide3.querySelector('.slide-main-title').innerText = pickRandom(s3.titles);
+            }
+
+            // Slide 4: Álbum
+            const s4 = WRAPPED_RANDOM_TEXTS.slide4;
+            const slide4 = document.getElementById('wrapped-slide-4');
+            if (slide4) {
+                slide4.querySelector('.slide-header-badge').innerText = pickRandom(s4.badges);
+                slide4.querySelector('.slide-main-title').innerText = pickRandom(s4.titles);
+            }
+
+            // Slide 5: Ritmo Biológico
+            const s5 = WRAPPED_RANDOM_TEXTS.slide5;
+            const slide5 = document.getElementById('wrapped-slide-5');
+            if (slide5) {
+                slide5.querySelector('.slide-header-badge').innerText = pickRandom(s5.badges);
+                slide5.querySelector('.slide-main-title').innerText = pickRandom(s5.titles);
+            }
+
+            // Slide 6: Día Récord
+            const s6 = WRAPPED_RANDOM_TEXTS.slide6;
+            const slide6 = document.getElementById('wrapped-slide-6');
+            if (slide6) {
+                slide6.querySelector('.slide-header-badge').innerText = pickRandom(s6.badges);
+                slide6.querySelector('.slide-main-title').innerText = pickRandom(s6.titles);
+                slide6.querySelector('.slide-footer-quote').innerText = pickRandom(s6.quotes);
+            }
+
+            // Slide 7: Brújula Sónica
+            const s7 = WRAPPED_RANDOM_TEXTS.slide7;
+            const slide7 = document.getElementById('wrapped-slide-7');
+            if (slide7) {
+                slide7.querySelector('.slide-header-badge').innerText = pickRandom(s7.badges);
+                slide7.querySelector('.slide-main-title').innerText = pickRandom(s7.titles);
+            }
+
+            // Slide 8: Arquetipo
+            const s8 = WRAPPED_RANDOM_TEXTS.slide8;
+            const slide8 = document.getElementById('wrapped-slide-8');
+            if (slide8) {
+                slide8.querySelector('.slide-header-badge').innerText = pickRandom(s8.badges);
+            }
+        }
 
         // Abrir Music Wrapped
         async function openMusicWrapped() {
@@ -2140,6 +2768,7 @@
                     const res = await fetch('/api/wrapped');
                     wrappedData = await res.json();
                 }
+                randomizeWrappedTheme(wrappedData);
                 populateWrappedData(wrappedData);
                 initWrappedStory();
             } catch (e) {
@@ -2149,48 +2778,85 @@
             }
         }
 
+        // Reiniciar y barajar con un nuevo tema
+        function restartWrapped() {
+            if (wrappedData) {
+                randomizeWrappedTheme(wrappedData);
+                populateWrappedData(wrappedData);
+            }
+            goToWrappedSlide(0);
+        }
+
         // Cerrar Music Wrapped
         function closeMusicWrapped() {
             const modal = document.getElementById('wrappedModal');
             modal.style.display = 'none';
             pauseWrappedTimer();
             if (wrappedProgressFrame) cancelAnimationFrame(wrappedProgressFrame);
-            // Reset barras de progreso
             for (let i = 0; i < WRAPPED_TOTAL_SLIDES; i++) {
                 const seg = document.getElementById(`prog-seg-${i}`);
                 if (seg) seg.style.width = '0%';
             }
+
+        window.openMusicWrapped = openMusicWrapped;
+        window.closeMusicWrapped = closeMusicWrapped;
+        window.restartWrapped = restartWrapped;
         }
 
         // Rellenar datos dinámicos en el DOM
         function populateWrappedData(data) {
             if (!data) return;
 
-            // Slide 1: Volumen
+            // Slide 0: Volumen
             const vol = data.volume || {};
             animateCounter(document.getElementById('wrapVolMinutes'), vol.total_minutos || 0, 1600);
             document.getElementById('wrapVolHours').innerText = (vol.total_horas || 0) + ' h';
             document.getElementById('wrapVolDays').innerText = (vol.dias_continuos || 0) + ' d';
             document.getElementById('wrapVolSongs').innerText = (vol.canciones_unicas || 0);
 
-            // Slide 2: Tu tema en bucle
+            // Slide 1: Tu tema en bucle
             const topSong = data.top_song || {};
-            const coverImg = document.getElementById('wrapLoopCover');
-            if (coverImg) {
-                coverImg.src = getProxiedImageUrl(topSong.imagen_url);
+            const loopCover = document.getElementById('wrapLoopCover');
+            if (loopCover) {
+                loopCover.src = getProxiedImageUrl(topSong.imagen_url);
+                loopCover.onerror = () => { loopCover.src = DEFAULT_COVER_SVG; };
             }
             document.getElementById('wrapLoopTitle').innerText = topSong.cancion || 'Canción Desconocida';
             document.getElementById('wrapLoopArtist').innerText = topSong.artista || 'Artista Desconocido';
             animateCounter(document.getElementById('wrapLoopCount'), topSong.reproducciones || 0, 1400);
 
-            // Slide 3: Top 5 de Artistas
+            // Frase de reproducciones variada
+            const slide1 = document.getElementById('wrapped-slide-1');
+            const playBadge1 = slide1 ? slide1.querySelector('.song-badge-plays') : null;
+            if (playBadge1) {
+                const pat1 = pickRandom(WRAPPED_RANDOM_TEXTS.slide1.playsFmt);
+                playBadge1.innerHTML = pat1.replace('{count}', `<span id="wrapLoopCount" style="color: #22c55e; font-weight: 800; font-size: 1.2em;">${(topSong.reproducciones || 0)}</span>`);
+            }
+
+            // Slide 2: Top 5 Canciones
+            const topSongs = data.top_songs || [];
+            const songsContainer = document.getElementById('wrapTopSongsList');
+            if (songsContainer) {
+                songsContainer.innerHTML = topSongs.map((s, idx) => `
+                    <div class="top-rank-row" style="animation-delay: ${0.08 * (idx + 1)}s;">
+                        <span class="rank-num-badge">#${idx + 1}</span>
+                        <img src="${getProxiedImageUrl(s.imagen_url)}" class="rank-avatar" style="border-radius: 8px;" crossorigin="anonymous" onerror="this.src='${DEFAULT_COVER_SVG}'">
+                        <div class="rank-info">
+                            <div class="rank-name">${s.cancion}</div>
+                            <div class="rank-sub">${s.artista || ''} • <b>${s.reproducciones} reps</b></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Slide 3: Top 5 Artistas
             const topArtists = data.top_artists || [];
             const artistsContainer = document.getElementById('wrapTopArtistsList');
             if (artistsContainer) {
                 artistsContainer.innerHTML = topArtists.map((a, idx) => `
-                    <div class="top-rank-row" style="animation-delay: ${0.1 * (idx + 1)}s;">
+                    <div class="top-rank-row" style="animation-delay: ${0.08 * (idx + 1)}s;">
                         <span class="rank-num-badge">#${idx + 1}</span>
-                        <img src="${getProxiedImageUrl(a.imagen_url)}" class="rank-avatar" crossorigin="anonymous">
+                        <img src="${getProxiedImageUrl(a.imagen_url)}" class="rank-avatar" crossorigin="anonymous" onerror="this.src='${DEFAULT_COVER_SVG}'">
                         <div class="rank-info">
                             <div class="rank-name">${a.nombre}</div>
                             <div class="rank-sub">${a.reproducciones} reproducciones</div>
@@ -2205,11 +2871,38 @@
                 `).join('');
             }
 
-            // Slide 4: Ritmo Biológico (24h)
+            // Slide 4: Álbum Estrella
+            const topAlbum = data.top_album || {};
+            const albCover = document.getElementById('wrapAlbumCover');
+            if (albCover) {
+                albCover.src = getProxiedImageUrl(topAlbum.imagen_url);
+                albCover.onerror = () => { albCover.src = DEFAULT_COVER_SVG; };
+            }
+            document.getElementById('wrapAlbumTitle').innerText = topAlbum.album_nombre || 'Álbum';
+            document.getElementById('wrapAlbumArtist').innerText = topAlbum.artista || 'Artista';
+            animateCounter(document.getElementById('wrapAlbumPlays'), topAlbum.reproducciones || 0, 1300);
+
+            // Frase de reproducciones de álbum variada
+            const slide4 = document.getElementById('wrapped-slide-4');
+            const playBadge4 = slide4 ? slide4.querySelector('.song-badge-plays') : null;
+            if (playBadge4) {
+                const pat4 = pickRandom(WRAPPED_RANDOM_TEXTS.slide4.playsFmt);
+                playBadge4.innerHTML = pat4.replace('{count}', `<span id="wrapAlbumPlays" style="color: #38bdf8; font-weight: 800; font-size: 1.15em;">${(topAlbum.reproducciones || 0)}</span>`);
+            }
+
+            // Slide 5: Ritmo Biológico y Hábitos
             const act = data.activity || {};
             const hourText = (act.peak_hour !== undefined) ? `${String(act.peak_hour).padStart(2, '0')}:00 h` : '11:00 h';
             document.getElementById('wrapPeakHour').innerText = hourText;
             document.getElementById('wrapPeakDay').innerText = act.peak_day || 'Lunes';
+
+            const habits = data.habits || {};
+            document.getElementById('wrapWeekdayPct').innerText = (habits.weekday_pct || 78) + '%';
+            document.getElementById('wrapWeekendPct').innerText = (habits.weekend_pct || 22) + '%';
+            const wbar = document.getElementById('wrapWeekdayBar');
+            const endbar = document.getElementById('wrapWeekendBar');
+            if (wbar) wbar.style.width = (habits.weekday_pct || 78) + '%';
+            if (endbar) endbar.style.width = (habits.weekend_pct || 22) + '%';
 
             const hourlyContainer = document.getElementById('wrapHourlyBars');
             if (hourlyContainer && act.hourly_distribution) {
@@ -2221,41 +2914,79 @@
                 }).join('');
             }
 
-            // Slide 5: Resumen y Arquetipo
-            const arch = data.archetype || {};
-            document.getElementById('wrapArchetypeEmoji').innerText = arch.emoji || '🔁';
-            document.getElementById('wrapArchetypeTitle').innerText = arch.title || 'Adicto al Bucle';
-            document.getElementById('wrapArchetypeSub').innerText = arch.subtitle || '';
-            document.getElementById('wrapArchetypeDesc').innerText = arch.desc || '';
+            // Slide 6: El Día Más Musical (Récords)
+            const rec = data.records || {};
+            document.getElementById('wrapRecordDayDate').innerText = '📅 ' + (rec.record_day_date || '21 de Abril de 2026');
+            animateCounter(document.getElementById('wrapRecordDayCount'), rec.record_day_count || 93, 1500);
+            document.getElementById('wrapActiveDays').innerText = (rec.dias_activos || 193) + ' d';
+            document.getElementById('wrapDailyAvg').innerText = (rec.media_diaria || 22.2);
 
-            document.getElementById('wrapSumMinutes').innerText = (vol.total_minutos || 0).toLocaleString();
-            document.getElementById('wrapSumSongs').innerText = (vol.canciones_unicas || 0).toLocaleString();
+            // Slide 7: Brújula Sónica & Diversidad
+            const slots = (data.time_slots && data.time_slots.slots) || {};
+            const totalEsc = vol.total_escuchas || 4276;
+            const topSlotName = (data.time_slots && data.time_slots.top_slot) || 'Tarde';
+            const topSlotPct = (data.time_slots && data.time_slots.top_slot_pct) || 40;
+            document.getElementById('wrapTopSlotName').innerText = topSlotName;
+            document.getElementById('wrapTopSlotPct').innerText = topSlotPct + '%';
+
+            const cManana = slots['Mañana'] || 1515;
+            const cTarde = slots['Tarde'] || 1726;
+            const cNoche = slots['Noche'] || 966;
+            const cMadrugada = slots['Madrugada'] || 69;
+
+            document.getElementById('cntSlotManana').innerText = cManana.toLocaleString('es-ES');
+            document.getElementById('cntSlotTarde').innerText = cTarde.toLocaleString('es-ES');
+            document.getElementById('cntSlotNoche').innerText = cNoche.toLocaleString('es-ES');
+            document.getElementById('cntSlotMadrugada').innerText = cMadrugada.toLocaleString('es-ES');
+
+            document.getElementById('barSlotManana').style.width = Math.round((cManana / totalEsc) * 100) + '%';
+            document.getElementById('barSlotTarde').style.width = Math.round((cTarde / totalEsc) * 100) + '%';
+            document.getElementById('barSlotNoche').style.width = Math.round((cNoche / totalEsc) * 100) + '%';
+            document.getElementById('barSlotMadrugada').style.width = Math.round((cMadrugada / totalEsc) * 100) + '%';
+
+            const divData = data.diversity || {};
+            document.getElementById('wrapDiversityArtists').innerText = (divData.artistas_unicos || vol.artistas_unicos || 467).toLocaleString('es-ES');
+            document.getElementById('wrapDiversitySongs').innerText = (divData.canciones_unicas || vol.canciones_unicas || 858).toLocaleString('es-ES');
+
+            // Slide 8: Gran Final & Arquetipo Dinámico Variado
+            const baseArch = data.archetype || {};
+            let archList = DYNAMIC_ARCHETYPES.loop;
+            if (baseArch.title && baseArch.title.includes("Noct")) archList = DYNAMIC_ARCHETYPES.night;
+            else if (baseArch.title && baseArch.title.includes("Explor")) archList = DYNAMIC_ARCHETYPES.explorer;
+            else if (baseArch.title && baseArch.title.includes("Mel")) archList = DYNAMIC_ARCHETYPES.pure;
+
+            const selectedArch = pickRandom(archList) || baseArch;
+            document.getElementById('wrapArchetypeEmoji').innerText = selectedArch.emoji || baseArch.emoji || '🔁';
+            document.getElementById('wrapArchetypeTitle').innerText = selectedArch.title || baseArch.title || 'Adicto al Bucle';
+            document.getElementById('wrapArchetypeSub').innerText = selectedArch.subtitle || baseArch.subtitle || '';
+            document.getElementById('wrapArchetypeDesc').innerText = selectedArch.desc || baseArch.desc || '';
+
+            document.getElementById('wrapSumMinutes').innerText = (vol.total_minutos || 0).toLocaleString('es-ES');
+            document.getElementById('wrapSumSongs').innerText = (vol.canciones_unicas || 0).toLocaleString('es-ES');
             document.getElementById('wrapSumTopSong').innerText = `${topSong.cancion || '-'} (${topSong.reproducciones || 0} reps)`;
         }
 
-        // Inicializar historias interactivas
+        // Inicializar historias
         function initWrappedStory() {
             wrappedCurrentSlide = 0;
             goToWrappedSlide(0);
-            setupWrappedHoldListeners();
+            setupWrappedInteractions();
         }
 
-        // Cambiar a diapositiva específica
         function goToWrappedSlide(index) {
             if (index < 0) index = 0;
             if (index >= WRAPPED_TOTAL_SLIDES) {
-                closeMusicWrapped();
+                index = WRAPPED_TOTAL_SLIDES - 1;
+                pauseWrappedTimer();
                 return;
             }
 
             wrappedCurrentSlide = index;
 
-            // Mostrar solo la slide activa
             document.querySelectorAll('.wrapped-slide').forEach((s, idx) => {
                 s.classList.toggle('active', idx === index);
             });
 
-            // Actualizar barras de progreso anteriores y siguientes
             for (let i = 0; i < WRAPPED_TOTAL_SLIDES; i++) {
                 const seg = document.getElementById(`prog-seg-${i}`);
                 if (seg) {
@@ -2264,11 +2995,18 @@
                 }
             }
 
-            startWrappedSlideTimer(false);
+            // En la diapositiva final de descargas, pausamos el temporizador para que el usuario navegue tranquilamente
+            if (index === WRAPPED_TOTAL_SLIDES - 1) {
+                pauseWrappedTimer();
+                const segLast = document.getElementById(`prog-seg-${WRAPPED_TOTAL_SLIDES - 1}`);
+                if (segLast) segLast.style.width = '100%';
+            } else {
+                startWrappedSlideTimer(false);
+            }
         }
 
-        // Temporizador y barra de progreso fluida
         function startWrappedSlideTimer(fromPaused = false) {
+            if (wrappedCurrentSlide === WRAPPED_TOTAL_SLIDES - 1) return;
             if (!fromPaused) {
                 wrappedSlideStartTime = performance.now();
                 wrappedSlidePausedTime = 0;
@@ -2301,9 +3039,12 @@
             }
         }
 
-        // Navegación por tap izquierda / derecha
-        function handleWrappedTap(e, direction) {
-            if (wrappedIsPaused) return;
+        // Navegación por botones flecha
+        function handleWrappedNav(e, direction) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             if (direction === 'prev') {
                 goToWrappedSlide(wrappedCurrentSlide - 1);
             } else {
@@ -2311,14 +3052,37 @@
             }
         }
 
-        // Mantener pulsado (long press / hold) para pausar
-        function setupWrappedHoldListeners() {
+        // Configuración de eventos táctiles, clics y teclado sin interferir con botones
+        function setupWrappedInteractions() {
             const container = document.getElementById('wrappedContainer');
-            if (!container || container.dataset.holdSetup) return;
-            container.dataset.holdSetup = "true";
+            if (!container || container.dataset.listenersSetup) return;
+            container.dataset.listenersSetup = "true";
 
+            // Click / Tap en el contenedor (35% izquierda = anterior, 65% derecha = siguiente)
+            container.addEventListener('click', (e) => {
+                if (e.target.closest('button') || 
+                    e.target.closest('a') || 
+                    e.target.closest('.no-hold') || 
+                    e.target.closest('.wrapped-close-btn') || 
+                    e.target.closest('.wrapped-export-hub') || 
+                    e.target.closest('.wrapped-nav-arrow')) {
+                    return;
+                }
+
+                if (wrappedCurrentSlide === WRAPPED_TOTAL_SLIDES - 1) return;
+
+                const rect = container.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                if (clickX < rect.width * 0.35) {
+                    goToWrappedSlide(wrappedCurrentSlide - 1);
+                } else {
+                    goToWrappedSlide(wrappedCurrentSlide + 1);
+                }
+            });
+
+            // Long-press para pausar historias
             const handleHoldStart = (e) => {
-                if (e.target.closest('.no-hold') || e.target.closest('button')) return;
+                if (e.target.closest('.no-hold') || e.target.closest('button') || e.target.closest('.wrapped-export-hub')) return;
                 wrappedHoldTimer = setTimeout(() => {
                     pauseWrappedTimer();
                     container.classList.add('is-paused');
@@ -2327,7 +3091,7 @@
 
             const handleHoldEnd = (e) => {
                 if (wrappedHoldTimer) clearTimeout(wrappedHoldTimer);
-                if (wrappedIsPaused) {
+                if (wrappedIsPaused && wrappedCurrentSlide < WRAPPED_TOTAL_SLIDES - 1) {
                     container.classList.remove('is-paused');
                     startWrappedSlideTimer(true);
                 }
@@ -2336,9 +3100,23 @@
             container.addEventListener('pointerdown', handleHoldStart);
             window.addEventListener('pointerup', handleHoldEnd);
             window.addEventListener('pointercancel', handleHoldEnd);
+
+            // Soporte para teclado (Flechas izq/dcha y Escape)
+            window.addEventListener('keydown', (e) => {
+                const modal = document.getElementById('wrappedModal');
+                if (!modal || modal.style.display !== 'flex') return;
+                if (e.key === 'ArrowRight' || e.key === ' ') {
+                    e.preventDefault();
+                    goToWrappedSlide(wrappedCurrentSlide + 1);
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    goToWrappedSlide(wrappedCurrentSlide - 1);
+                } else if (e.key === 'Escape') {
+                    closeMusicWrapped();
+                }
+            });
         }
 
-        // Animación de contador incremental con easeOutExpo
         function animateCounter(element, targetVal, duration = 1600) {
             if (!element) return;
             const startVal = 0;
@@ -2358,99 +3136,170 @@
             requestAnimationFrame(step);
         }
 
-        // Función auxiliar para evitar tainted canvas con imágenes externas (CORS)
-        function getProxiedImageUrl(url) {
-            if (!url) return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200';
-            if (url.startsWith('http://') || url.startsWith('https://')) {
-                return '/api/proxy-image?url=' + encodeURIComponent(url);
+        // ================= EXPORTACIÓN 1: DESCARGAR TODAS LAS HISTORIAS (PACK PNG) =================
+        async function downloadAllStoriesPng() {
+            const btn = document.getElementById('btnDownloadAllPng');
+            const origText = btn ? btn.innerHTML : '';
+            if (btn) { btn.disabled = true; btn.innerHTML = "⏳ Preparando capturas..."; }
+            pauseWrappedTimer();
+
+            const names = [
+                "01_Volumen_Sonico",
+                "02_Tema_En_Bucle",
+                "03_Top_Canciones",
+                "04_Top_Artistas",
+                "05_Album_Estrella",
+                "06_Ritmo_Biologico",
+                "07_Dia_Mas_Musical",
+                "08_Brujula_Sonica",
+                "09_Identidad_Final"
+            ];
+
+            const arrows = document.querySelectorAll('.wrapped-nav-arrow');
+            const closeBtn = document.querySelector('.wrapped-close-btn');
+            const pauseInd = document.getElementById('wrappedPauseIndicator');
+            const hub = document.querySelector('.wrapped-export-hub');
+
+            arrows.forEach(a => a.style.display = 'none');
+            if (closeBtn) closeBtn.style.display = 'none';
+            if (pauseInd) pauseInd.style.display = 'none';
+
+            try {
+                for (let i = 0; i < WRAPPED_TOTAL_SLIDES; i++) {
+                    if (btn) btn.innerHTML = `⏳ Capturando historia ${i + 1} de ${WRAPPED_TOTAL_SLIDES}...`;
+
+                    document.querySelectorAll('.wrapped-slide').forEach((s, idx) => {
+                        s.classList.toggle('active', idx === i);
+                    });
+                    if (i === WRAPPED_TOTAL_SLIDES - 1 && hub) hub.style.visibility = 'hidden';
+
+                    await new Promise(r => setTimeout(r, 180));
+
+                    const slideEl = document.getElementById(`wrapped-slide-${i}`);
+                    const canvas = await html2canvas(slideEl, {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: false,
+                        logging: false,
+                        backgroundColor: '#090d16'
+                    });
+
+                    const link = document.createElement('a');
+                    link.download = `Wrapped_${names[i]}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    await new Promise(r => setTimeout(r, 320));
+                }
+
+                document.querySelectorAll('.wrapped-slide').forEach((s, idx) => {
+                    s.classList.toggle('active', idx === WRAPPED_TOTAL_SLIDES - 1);
+                });
+
+                if (btn) btn.innerHTML = "✅ ¡9 Historias descargadas con éxito!";
+                setTimeout(() => {
+                    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+                }, 4000);
+            } catch (err) {
+                console.error("Error descargando historias:", err);
+                alert("Error al capturar historias: " + err);
+                if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+            } finally {
+                arrows.forEach(a => a.style.display = 'flex');
+                if (closeBtn) closeBtn.style.display = 'flex';
+                if (pauseInd) pauseInd.style.display = '';
+                if (hub) hub.style.visibility = 'visible';
             }
-            return url;
         }
 
-        // ================= EXPORTACIÓN EN IMAGEN (PNG) =================
-        async function exportWrappedImage(slideIndex) {
+        // ================= EXPORTACIÓN 2: TARJETA RESUMEN (PNG) =================
+        async function downloadSummaryCardPng() {
+            const btn = document.getElementById('btnExportImg');
+            const origText = btn ? btn.innerHTML : '';
+            if (btn) { btn.disabled = true; btn.innerHTML = "⏳ Generando..."; }
             pauseWrappedTimer();
-            const slideEl = document.getElementById(`wrapped-slide-${slideIndex}`);
-            if (!slideEl) return;
 
-            const btn = (typeof event !== 'undefined' && event && event.target) ? event.target : document.getElementById('btnExportImg');
-            const origText = btn ? btn.innerText : '📸 Guardar Historia';
-            if (btn) { btn.disabled = true; btn.innerText = "⏳ Generando..."; }
+            const slideEl = document.getElementById('wrapped-slide-8');
+            const hub = slideEl ? slideEl.querySelector('.wrapped-export-hub') : null;
+            if (hub) hub.style.visibility = 'hidden';
 
-            const actions = slideEl.querySelector('.wrapped-actions-bottom');
-            if (actions) actions.style.visibility = 'hidden';
+            const arrows = document.querySelectorAll('.wrapped-nav-arrow');
+            const closeBtn = document.querySelector('.wrapped-close-btn');
+            arrows.forEach(a => a.style.display = 'none');
+            if (closeBtn) closeBtn.style.display = 'none';
 
             try {
                 const canvas = await html2canvas(slideEl, {
                     scale: 2,
                     useCORS: true,
-                    allowTaint: true,
+                    allowTaint: false,
                     logging: false,
                     backgroundColor: '#090d16'
                 });
                 const link = document.createElement('a');
-                link.download = `Music_Wrapped_Slide_${slideIndex + 1}.png`;
+                link.download = "Music_Wrapped_Resumen.png";
                 link.href = canvas.toDataURL('image/png');
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
             } catch (err) {
-                console.error("Error guardando imagen:", err);
-                alert("Error generando la imagen: " + err);
+                console.error("Error guardando resumen:", err);
+                alert("Error generando el resumen: " + err);
             } finally {
-                if (actions) actions.style.visibility = 'visible';
-                if (btn) { btn.disabled = false; btn.innerText = origText; }
-                startWrappedSlideTimer(true);
+                if (hub) hub.style.visibility = 'visible';
+                arrows.forEach(a => a.style.display = 'flex');
+                if (closeBtn) closeBtn.style.display = 'flex';
+                if (btn) { btn.disabled = false; btn.innerHTML = origText; }
             }
         }
 
-        // ================= EXPORTACIÓN EN GIF ANIMADO =================
-        async function exportWrappedGif(slideIndex) {
+        // ================= EXPORTACIÓN 3: GIF ANIMADO =================
+        async function downloadWrappedGif() {
+            const btn = document.getElementById('btnExportGif');
+            const origText = btn ? btn.innerHTML : '';
+            if (btn) { btn.disabled = true; btn.innerHTML = "⏳ Grabando vinilo..."; }
             pauseWrappedTimer();
-            const slideEl = document.getElementById(`wrapped-slide-${slideIndex}`);
-            if (!slideEl) return;
 
-            if (typeof gifshot === 'undefined') {
-                alert("La biblioteca de generación de GIF se está cargando. Por favor, reintenta en unos segundos.");
-                startWrappedSlideTimer(true);
-                return;
-            }
+            const slideEl = document.getElementById('wrapped-slide-1');
+            document.querySelectorAll('.wrapped-slide').forEach((s, idx) => {
+                s.classList.toggle('active', idx === 1);
+            });
+            await new Promise(r => setTimeout(r, 120));
 
-            const btn = (typeof event !== 'undefined' && event && event.target) ? event.target : document.getElementById('btnExportGif');
-            const origText = btn ? btn.innerText : '📥 Guardar GIF';
-            if (btn) { btn.disabled = true; btn.innerText = "⏳ Grabando..."; }
-
-            const actions = slideEl.querySelector('.wrapped-actions-bottom');
-            if (actions) actions.style.visibility = 'hidden';
+            const arrows = document.querySelectorAll('.wrapped-nav-arrow');
+            const closeBtn = document.querySelector('.wrapped-close-btn');
+            arrows.forEach(a => a.style.display = 'none');
+            if (closeBtn) closeBtn.style.display = 'none';
 
             try {
-                // Capturar 6 fotogramas optimizados a 140ms
                 const frames = [];
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 8; i++) {
                     const canvas = await html2canvas(slideEl, {
                         scale: 1,
                         useCORS: true,
-                        allowTaint: true,
+                        allowTaint: false,
                         logging: false,
                         backgroundColor: '#090d16'
                     });
                     frames.push(canvas.toDataURL('image/png'));
-                    await new Promise(r => setTimeout(r, 140));
+                    await new Promise(r => setTimeout(r, 130));
                 }
 
-                if (btn) btn.innerText = "⏳ Creando GIF...";
+                if (btn) btn.innerHTML = "⏳ Compilando GIF...";
 
                 gifshot.createGIF({
                     images: frames,
                     gifWidth: 360,
                     gifHeight: 640,
-                    interval: 0.14,
+                    interval: 0.13,
                     numFrames: frames.length,
                     sampleInterval: 10
                 }, function(obj) {
                     if (!obj.error) {
                         const link = document.createElement('a');
-                        link.download = `Music_Wrapped_Slide_${slideIndex + 1}.gif`;
+                        link.download = "Music_Wrapped_Animado.gif";
                         link.href = obj.image;
                         document.body.appendChild(link);
                         link.click();
@@ -2459,16 +3308,22 @@
                         console.error("Error gifshot:", obj.error);
                         alert("Error al compilar el GIF: " + obj.error);
                     }
-                    if (actions) actions.style.visibility = 'visible';
-                    if (btn) { btn.disabled = false; btn.innerText = origText; }
-                    startWrappedSlideTimer(true);
+                    document.querySelectorAll('.wrapped-slide').forEach((s, idx) => {
+                        s.classList.toggle('active', idx === WRAPPED_TOTAL_SLIDES - 1);
+                    });
+                    arrows.forEach(a => a.style.display = 'flex');
+                    if (closeBtn) closeBtn.style.display = 'flex';
+                    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
                 });
             } catch (err) {
                 console.error("Error generando GIF:", err);
                 alert("Error creando el GIF: " + err);
-                if (actions) actions.style.visibility = 'visible';
-                if (btn) { btn.disabled = false; btn.innerText = origText; }
-                startWrappedSlideTimer(true);
+                document.querySelectorAll('.wrapped-slide').forEach((s, idx) => {
+                    s.classList.toggle('active', idx === WRAPPED_TOTAL_SLIDES - 1);
+                });
+                arrows.forEach(a => a.style.display = 'flex');
+                if (closeBtn) closeBtn.style.display = 'flex';
+                if (btn) { btn.disabled = false; btn.innerHTML = origText; }
             }
         }
     </script>

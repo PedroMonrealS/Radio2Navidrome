@@ -1,3 +1,4 @@
+import urllib.parse
 from database import get_stats_db_connection
 
 INTERVAL_MAP = {
@@ -169,11 +170,16 @@ def get_history(limit=30, offset=0, search=""):
     return rows
 
 def get_wrapped_data():
-    """Genera todas las métricas procesadas para la experiencia interactiva Music Wrapped"""
+    """Genera todas las métricas procesadas para la experiencia interactiva Music Wrapped con proxy CORS seguro"""
     conn = get_stats_db_connection()
     cursor = conn.cursor(dictionary=True)
     
-    # 1. Totales
+    def proxy_url(u):
+        if u and (u.startswith('http://') or u.startswith('https://')):
+            return f"/api/proxy-image?url={urllib.parse.quote(u)}"
+        return u or "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200"
+
+    # 1. Totales y Volumen
     cursor.execute("""
         SELECT 
             COUNT(*) as total_escuchas,
@@ -184,12 +190,10 @@ def get_wrapped_data():
     total_escuchas = int(res_totales.get("total_escuchas", 0))
     canciones_unicas = int(res_totales.get("canciones_unicas", 0))
     
-    # Estimación de minutos (promedio 3.4 min por canción)
     total_minutos = int(total_escuchas * 3.4)
     total_horas = round(total_minutos / 60, 1)
     dias_continuos = round(total_horas / 24, 1)
     
-    # Total artistas únicos
     cursor.execute("""
         SELECT COUNT(DISTINCT a.spotify_id) as artistas_unicos
         FROM escuchas e
@@ -219,8 +223,34 @@ def get_wrapped_data():
     top_song = cursor.fetchone() or {
         "cancion": "Canción Desconocida", "artista": "Artista", "imagen_url": None, "reproducciones": 0
     }
+    top_song["imagen_url"] = proxy_url(top_song.get("imagen_url"))
     
-    # 3. Top 5 Artistas
+    # 3. Álbum Estrella Top 1
+    cursor.execute("""
+        SELECT 
+            c.album_nombre,
+            c.imagen_url,
+            COUNT(e.id) as reproducciones,
+            (
+                SELECT a2.nombre 
+                FROM autores a2 
+                JOIN cancion_autor ca2 ON a2.spotify_id = ca2.autor_id 
+                WHERE ca2.cancion_id = c.spotify_id 
+                LIMIT 1
+            ) as artista
+        FROM canciones c
+        JOIN escuchas e ON c.spotify_id = e.spotify_id_cancion
+        WHERE c.album_nombre IS NOT NULL AND c.album_nombre != ''
+        GROUP BY c.album_nombre, c.imagen_url, c.spotify_id
+        ORDER BY reproducciones DESC
+        LIMIT 1;
+    """)
+    top_album = cursor.fetchone() or {
+        "album_nombre": "Grandes Éxitos", "artista": "Varios Artistas", "imagen_url": None, "reproducciones": 0
+    }
+    top_album["imagen_url"] = proxy_url(top_album.get("imagen_url"))
+
+    # 4. Top 5 Artistas
     cursor.execute("""
         SELECT 
             a.nombre,
@@ -235,11 +265,14 @@ def get_wrapped_data():
         LIMIT 5;
     """)
     top_artists = cursor.fetchall()
+    for a in top_artists:
+        a["imagen_url"] = proxy_url(a.get("imagen_url"))
     
-    # 4. Top 5 Canciones
+    # 5. Top 5 Canciones
     cursor.execute("""
         SELECT 
             c.nombre as cancion,
+            c.album_nombre,
             c.imagen_url,
             GROUP_CONCAT(DISTINCT a.nombre SEPARATOR ', ') as artista,
             COUNT(e.id) as reproducciones
@@ -247,13 +280,15 @@ def get_wrapped_data():
         JOIN canciones c ON e.spotify_id_cancion = c.spotify_id
         LEFT JOIN cancion_autor ca ON c.spotify_id = ca.cancion_id
         LEFT JOIN autores a ON ca.autor_id = a.spotify_id
-        GROUP BY c.spotify_id, c.nombre, c.imagen_url
+        GROUP BY c.spotify_id, c.nombre, c.album_nombre, c.imagen_url
         ORDER BY reproducciones DESC
         LIMIT 5;
     """)
     top_songs = cursor.fetchall()
+    for s in top_songs:
+        s["imagen_url"] = proxy_url(s.get("imagen_url"))
     
-    # 5. Pico de actividad (Hora y Día)
+    # 6. Pico de Actividad y Hábitos (Hora, Día y Entre semana vs Finde)
     cursor.execute("""
         SELECT HOUR(reproducido_en) as hora, COUNT(*) as c
         FROM escuchas
@@ -278,6 +313,19 @@ def get_wrapped_data():
     }
     peak_day = dias_traduccion.get(row_dia.get("dia", "Monday"), "Lunes")
     
+    # Reparto Entre Semana vs Fin de Semana
+    cursor.execute("""
+        SELECT 
+            SUM(CASE WHEN DAYOFWEEK(reproducido_en) IN (1, 7) THEN 1 ELSE 0 END) as weekend_count,
+            SUM(CASE WHEN DAYOFWEEK(reproducido_en) NOT IN (1, 7) THEN 1 ELSE 0 END) as weekday_count
+        FROM escuchas;
+    """)
+    res_split = cursor.fetchone() or {"weekend_count": 0, "weekday_count": 0}
+    weekend_count = int(res_split.get("weekend_count") or 0)
+    weekday_count = int(res_split.get("weekday_count") or 0)
+    weekend_pct = round((weekend_count / max(total_escuchas, 1)) * 100)
+    weekday_pct = 100 - weekend_pct
+    
     # Distribución por horas (24 horas)
     cursor.execute("""
         SELECT HOUR(reproducido_en) as hora, COUNT(*) as c
@@ -288,6 +336,58 @@ def get_wrapped_data():
     hourly_rows = cursor.fetchall()
     hourly_dict = {int(r["hora"]): int(r["c"]) for r in hourly_rows}
     hourly_distribution = [hourly_dict.get(h, 0) for h in range(24)]
+
+    # 7. Día Récord y Días Activos
+    cursor.execute("""
+        SELECT DATE(reproducido_en) as fecha, COUNT(*) as c
+        FROM escuchas
+        GROUP BY fecha
+        ORDER BY c DESC
+        LIMIT 1;
+    """)
+    row_record_day = cursor.fetchone() or {"fecha": None, "c": 0}
+    record_day_count = int(row_record_day.get("c", 0))
+    record_day_date = row_record_day.get("fecha")
+    meses_es = {
+        "January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril",
+        "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto",
+        "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"
+    }
+    if record_day_date:
+        mes_nombre = meses_es.get(record_day_date.strftime("%B"), record_day_date.strftime("%B"))
+        record_day_str = f"{record_day_date.day} de {mes_nombre} de {record_day_date.year}"
+    else:
+        record_day_str = "Día Récord"
+
+    cursor.execute("SELECT COUNT(DISTINCT DATE(reproducido_en)) as dias_activos FROM escuchas;")
+    res_dias = cursor.fetchone() or {"dias_activos": 1}
+    dias_activos = int(res_dias.get("dias_activos") or 1)
+    media_diaria = round(total_escuchas / max(dias_activos, 1), 1)
+
+    # 8. Franjas Horarias (Mañana, Tarde, Noche, Madrugada)
+    cursor.execute("""
+        SELECT 
+            CASE 
+                WHEN HOUR(reproducido_en) BETWEEN 6 AND 11 THEN 'Mañana'
+                WHEN HOUR(reproducido_en) BETWEEN 12 AND 17 THEN 'Tarde'
+                WHEN HOUR(reproducido_en) BETWEEN 18 AND 23 THEN 'Noche'
+                ELSE 'Madrugada'
+            END as franja,
+            COUNT(*) as cnt
+        FROM escuchas
+        GROUP BY franja
+        ORDER BY cnt DESC;
+    """)
+    franjas_rows = cursor.fetchall()
+    franjas_dict = {"Mañana": 0, "Tarde": 0, "Noche": 0, "Madrugada": 0}
+    for fr in franjas_rows:
+        franjas_dict[fr["franja"]] = int(fr["cnt"])
+    top_franja_nombre = franjas_rows[0]["franja"] if franjas_rows else "Tarde"
+    top_franja_count = franjas_dict.get(top_franja_nombre, 0)
+    top_franja_pct = round((top_franja_count / max(total_escuchas, 1)) * 100)
+
+    # 9. Variedad y Descubrimiento
+    variedad_pct = round((canciones_unicas / max(total_escuchas, 1)) * 100)
     
     cursor.close()
     conn.close()
@@ -341,12 +441,35 @@ def get_wrapped_data():
             "dias_continuos": dias_continuos
         },
         "top_song": top_song,
+        "top_album": top_album,
         "top_artists": top_artists,
         "top_songs": top_songs,
+        "habits": {
+            "weekday_count": weekday_count,
+            "weekend_count": weekend_count,
+            "weekday_pct": weekday_pct,
+            "weekend_pct": weekend_pct
+        },
         "activity": {
             "peak_hour": peak_hour,
             "peak_day": peak_day,
             "hourly_distribution": hourly_distribution
+        },
+        "records": {
+            "record_day_date": record_day_str,
+            "record_day_count": record_day_count,
+            "dias_activos": dias_activos,
+            "media_diaria": media_diaria
+        },
+        "time_slots": {
+            "slots": franjas_dict,
+            "top_slot": top_franja_nombre,
+            "top_slot_pct": top_franja_pct
+        },
+        "diversity": {
+            "variedad_pct": variedad_pct,
+            "canciones_unicas": canciones_unicas,
+            "artistas_unicos": artistas_unicos
         },
         "archetype": archetype
     }

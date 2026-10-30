@@ -20,6 +20,7 @@ from services.auditor import (
     sync_aceptadas_to_libreria,
     sync_playlist_faltantes
 )
+from services.qbit_service import force_start_and_reannounce_torrents
 
 radio_bp = Blueprint('radio_bp', __name__)
 
@@ -180,6 +181,14 @@ def send_all_lidarr():
 @radio_bp.route('/send_all_lidarr_status')
 def send_all_lidarr_status():
     return jsonify(get_lidarr_batch_status())
+
+@radio_bp.route('/api/qbit/force-refresh', methods=['POST'])
+def api_qbit_force_refresh():
+    target = 'unfinished'
+    if request.is_json and request.json:
+        target = request.json.get('target', 'unfinished')
+    result = force_start_and_reannounce_torrents(target=target)
+    return jsonify(result)
 
 @radio_bp.route('/live_status/<int:song_id>')
 def live_status(song_id):
