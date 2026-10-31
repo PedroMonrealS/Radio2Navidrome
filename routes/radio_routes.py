@@ -31,6 +31,8 @@ def ajax_response(success=True):
 def index():
     tab = request.args.get('tab', 'pendientes')
     page = int(request.args.get('page', 1))
+    radio = request.args.get('radio', '').strip()
+    artist = request.args.get('artist', '').strip()
     per_page = 30
     offset = (page - 1) * per_page
     
@@ -43,6 +45,9 @@ def index():
     
     cursor.execute("SELECT COUNT(*) as c FROM canciones_descubiertas WHERE estado = 'aceptada'")
     count_aceptadas = cursor.fetchone()['c']
+
+    cursor.execute("SELECT COUNT(*) as c FROM canciones_descubiertas WHERE estado = 'rechazada'")
+    count_rechazadas = cursor.fetchone()['c']
     
     cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE en_playlist = FALSE AND ignorar_playlist = FALSE")
     count_sin_playlist = cursor.fetchone()['c']
@@ -55,6 +60,30 @@ def index():
     
     cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE estado_archivo = 'desaparecida'")
     count_desaparecidas = cursor.fetchone()['c']
+
+    # Emisoras y artistas disponibles para filtros en pendientes y rechazadas
+    available_radios = []
+    available_artists = []
+    
+    if tab in ['pendientes', 'rechazadas']:
+        status_filter = 'pendiente' if tab == 'pendientes' else 'rechazada'
+        cursor.execute(f"""
+            SELECT station, COUNT(*) as count 
+            FROM canciones_descubiertas 
+            WHERE estado = '{status_filter}' AND station IS NOT NULL AND station != '' 
+            GROUP BY station 
+            ORDER BY station ASC
+        """)
+        available_radios = cursor.fetchall()
+
+        cursor.execute(f"""
+            SELECT artist, COUNT(*) as count 
+            FROM canciones_descubiertas 
+            WHERE estado = '{status_filter}' AND artist IS NOT NULL AND artist != '' 
+            GROUP BY artist 
+            ORDER BY artist ASC
+        """)
+        available_artists = cursor.fetchall()
     
     # Obtener los datos de la pestaña actual paginados
     data = []
@@ -62,9 +91,39 @@ def index():
     filtro = request.args.get('filtro', 'todas')
     
     if tab == 'pendientes':
-        total_items = count_pendientes
-        cursor.execute("SELECT * FROM canciones_descubiertas WHERE estado = 'pendiente' ORDER BY discovered_at DESC LIMIT %s OFFSET %s", (per_page, offset))
+        where_clauses = ["estado = 'pendiente'"]
+        params = []
+        if radio and radio != 'todas':
+            where_clauses.append("station = %s")
+            params.append(radio)
+        if artist and artist != 'todos':
+            where_clauses.append("artist = %s")
+            params.append(artist)
+            
+        where_sql = " AND ".join(where_clauses)
+        cursor.execute(f"SELECT COUNT(*) as c FROM canciones_descubiertas WHERE {where_sql}", tuple(params))
+        total_items = cursor.fetchone()['c']
+        
+        cursor.execute(f"SELECT * FROM canciones_descubiertas WHERE {where_sql} ORDER BY discovered_at DESC LIMIT %s OFFSET %s", tuple(params + [per_page, offset]))
         data = cursor.fetchall()
+
+    elif tab == 'rechazadas':
+        where_clauses = ["estado = 'rechazada'"]
+        params = []
+        if radio and radio != 'todas':
+            where_clauses.append("station = %s")
+            params.append(radio)
+        if artist and artist != 'todos':
+            where_clauses.append("artist = %s")
+            params.append(artist)
+            
+        where_sql = " AND ".join(where_clauses)
+        cursor.execute(f"SELECT COUNT(*) as c FROM canciones_descubiertas WHERE {where_sql}", tuple(params))
+        total_items = cursor.fetchone()['c']
+        
+        cursor.execute(f"SELECT * FROM canciones_descubiertas WHERE {where_sql} ORDER BY updated_at DESC, id DESC LIMIT %s OFFSET %s", tuple(params + [per_page, offset]))
+        data = cursor.fetchall()
+
     elif tab == 'descargar':
         total_items = count_aceptadas
         cursor.execute("SELECT * FROM canciones_descubiertas WHERE estado = 'aceptada' ORDER BY discovered_at DESC LIMIT %s OFFSET %s", (per_page, offset))
@@ -98,9 +157,14 @@ def index():
                            page=page, 
                            total_pages=total_pages,
                            filtro=filtro,
+                           selected_radio=radio,
+                           selected_artist=artist,
+                           available_radios=available_radios,
+                           available_artists=available_artists,
                            counts={
                                'pendientes': count_pendientes, 
                                'descargar': count_aceptadas, 
+                               'rechazadas': count_rechazadas,
                                'playlist': count_sin_playlist,
                                'rotas': count_rotas,
                                'renombradas': count_renombradas,
@@ -138,7 +202,7 @@ def change_status(song_id, status):
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("UPDATE canciones_descubiertas SET estado = %s WHERE id = %s", (status, song_id))
+            cursor.execute("UPDATE canciones_descubiertas SET estado = %s, updated_at = NOW() WHERE id = %s", (status, song_id))
             conn.commit()
             conn.close()
         except:
@@ -218,7 +282,7 @@ def delete_song(song_id):
         pass
     if request.args.get('ajax'):
         return ajax_response()
-    return redirect(url_for('.index', tab='descargar'))
+    return redirect(url_for('.index', tab=request.args.get('tab', 'descargar')))
 
 @radio_bp.route('/ignore_playlist/<int:db_id>')
 def ignore_playlist(db_id):

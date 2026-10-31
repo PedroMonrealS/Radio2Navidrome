@@ -233,6 +233,206 @@
             gap: 10px;
         }
 
+        /* Barra de Filtros en Pendientes y Rechazadas */
+        .filter-bar-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .filter-controls-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+        }
+        .filter-label {
+            font-weight: 700;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+        .filter-select {
+            background: #0d1527;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-family: inherit;
+            cursor: pointer;
+            min-width: 200px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .filter-select:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.25);
+        }
+
+        /* Searchable Dropdown de Artistas */
+        .searchable-dropdown {
+            position: relative;
+            min-width: 250px;
+        }
+        .dropdown-trigger-btn {
+            width: 100%;
+            background: #0d1527;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            outline: none;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+        .dropdown-trigger-btn:hover, .dropdown-trigger-btn.active-dropdown {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.25);
+        }
+        .selected-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 210px;
+            font-weight: 600;
+        }
+        .dropdown-caret {
+            color: var(--text-secondary);
+            font-size: 0.75em;
+            transition: transform 0.2s ease;
+        }
+        .dropdown-trigger-btn.active-dropdown .dropdown-caret {
+            transform: rotate(180deg);
+        }
+
+        /* Panel flotante del desplegable */
+        .dropdown-menu-box {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            width: 320px;
+            max-width: 90vw;
+            background: #151f35;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.65);
+            z-index: 1000;
+            overflow: hidden;
+            animation: dropdownFadeIn 0.15s ease-out;
+        }
+        @keyframes dropdownFadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dropdown-search-header {
+            padding: 10px;
+            background: #0e1629;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: #182238;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0 10px;
+        }
+        .search-icon {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            margin-right: 6px;
+        }
+        .dropdown-inner-search {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            padding: 8px 0;
+            font-size: 0.88em;
+            outline: none;
+            font-family: inherit;
+        }
+        .clear-search-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9em;
+            padding: 2px 4px;
+        }
+        .clear-search-btn:hover {
+            color: #ffffff;
+        }
+
+        .dropdown-options-scroll {
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 6px 0;
+        }
+        .dropdown-options-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .dropdown-options-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+
+        .dropdown-item-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 0.88em;
+            color: var(--text-primary);
+            transition: background 0.15s ease;
+        }
+        .dropdown-item-option:hover {
+            background: rgba(34, 197, 94, 0.12);
+            color: var(--accent-green);
+        }
+        .dropdown-item-option.active-item {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+        .item-badge {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            font-size: 0.78em;
+            padding: 2px 7px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .no-matches-msg {
+            padding: 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+
         /* Formularios e inputs oscuros */
         .add-form {
             display: flex;
@@ -1391,6 +1591,10 @@
                     <a href="/?tab=descargar" class="tab-btn {% if tab == 'descargar' %}active{% endif %}">
                         ⬇️ A Descargar ({{ counts.descargar }})
                     </a>
+                    <a href="/?tab=rechazadas" class="tab-btn {% if tab == 'rechazadas' %}active{% endif %}"
+                       style="{% if tab == 'rechazadas' %}background: #dc2626; color: white; border-color: #dc2626; font-weight: 700;{% endif %}">
+                        🚫 Rechazadas ({{ counts.rechazadas }})
+                    </a>
                     <a href="/?tab=playlist" class="tab-btn {% if tab == 'playlist' %}active{% endif %}">
                         🎶 Falta Playlist ({{ counts.playlist }})
                     </a>
@@ -1406,6 +1610,83 @@
                         🚀 Modo Rápido (Auto-reproducir la siguiente canción al procesar)
                     </label>
                 </div>
+
+                {% if tab in ['pendientes', 'rechazadas'] %}
+                <div class="filter-bar-container">
+                    <div class="filter-controls-group">
+                        <!-- Filtro por Emisora / Radio -->
+                        <div class="filter-group">
+                            <label class="filter-label">📻 Emisora:</label>
+                            <select id="radioFilterSelect" class="filter-select" onchange="applyRadioFilter(this.value)">
+                                <option value="todas">Todas las emisoras ({% if tab == 'pendientes' %}{{ counts.pendientes }}{% else %}{{ counts.rechazadas }}{% endif %})</option>
+                                {% for r in available_radios %}
+                                <option value="{{ r.station }}" {% if selected_radio == r.station %}selected{% endif %}>
+                                    {{ r.station }} ({{ r.count }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Filtro por Artista con Desplegable y Buscador Interno -->
+                        <div class="filter-group">
+                            <label class="filter-label">🎤 Artista:</label>
+                            <div class="searchable-dropdown" id="artistSearchableDropdown">
+                                <button type="button" class="dropdown-trigger-btn" id="artistDropdownTrigger" onclick="toggleArtistDropdown(event)">
+                                    <span id="selectedArtistLabel" class="selected-text">
+                                        {% if selected_artist and selected_artist != 'todos' %}
+                                            🎤 {{ selected_artist }}
+                                        {% else %}
+                                            Todos los artistas ({% if tab == 'pendientes' %}{{ counts.pendientes }}{% else %}{{ counts.rechazadas }}{% endif %})
+                                        {% endif %}
+                                    </span>
+                                    <span class="dropdown-caret">▾</span>
+                                </button>
+                                
+                                <div class="dropdown-menu-box" id="artistDropdownMenu" style="display: none;">
+                                    <div class="dropdown-search-header">
+                                        <div class="search-input-wrapper">
+                                            <span class="search-icon">🔍</span>
+                                            <input type="text" id="artistSearchField" class="dropdown-inner-search" placeholder="Escribe para buscar artista..." autocomplete="off" oninput="filterArtistList()" onclick="event.stopPropagation()">
+                                            <button type="button" id="clearSearchBtn" class="clear-search-btn" onclick="clearArtistSearch(event)" style="display: none;">✕</button>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown-options-scroll" id="artistOptionsScroll">
+                                        <div class="dropdown-item-option {% if not selected_artist or selected_artist == 'todos' %}active-item{% endif %}" onclick="selectArtistFilter('todos')">
+                                            <span class="item-name">⭐ Todos los artistas</span>
+                                            <span class="item-badge">{% if tab == 'pendientes' %}{{ counts.pendientes }}{% else %}{{ counts.rechazadas }}{% endif %}</span>
+                                        </div>
+                                        {% for a in available_artists %}
+                                        <div class="dropdown-item-option {% if selected_artist == a.artist %}active-item{% endif %}" data-name="{{ a.artist | lower }}" onclick="selectArtistFilter('{{ a.artist | escape }}')">
+                                            <span class="item-name">{{ a.artist }}</span>
+                                            <span class="item-badge">{{ a.count }}</span>
+                                        </div>
+                                        {% endfor %}
+                                        <div id="noArtistMatchMsg" class="no-matches-msg" style="display: none;">
+                                            No se encontró ningún artista
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón Limpiar Filtros y Resumen -->
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        {% if (selected_radio and selected_radio != 'todas') or (selected_artist and selected_artist != 'todos') %}
+                            <a href="/?tab={{ tab }}" class="btn btn-secondary" style="padding: 8px 14px; font-weight: 600; font-size: 0.88em; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                ✕ Limpiar filtros
+                            </a>
+                            <span style="font-size: 0.88em; color: var(--accent-green); font-weight: 600;">
+                                Mostrando {{ data | length }} de {{ total_items }} canciones
+                            </span>
+                        {% else %}
+                            <span style="font-size: 0.85em; color: var(--text-muted);">
+                                Total: {{ total_items }} canciones
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
                 
                 {% if tab == 'descargar' %}
                     <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; flex-wrap: wrap; gap: 12px;">
@@ -1484,6 +1765,12 @@
                                 <span class="station">📻 Emisora: {{ song.station }}</span>
                                 {% endif %}
                                 
+                                {% if tab == 'rechazadas' %}
+                                <span class="station" style="color: #fca5a5; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.12);">
+                                    🕒 Rechazada: {{ song.updated_at.strftime('%d/%m/%Y a las %H:%M') if song.updated_at else 'Previamente' }}
+                                </span>
+                                {% endif %}
+                                
                                 {% if tab == 'rotas' %}
                                     <div style="margin-top: 8px;">
                                         {% if song.estado_archivo == 'renombrada' %}
@@ -1508,6 +1795,9 @@
                                 {% if tab == 'pendientes' %}
                                     <button onclick="performAction('/change_status/{{ song.id }}/aceptada', this)" class="btn btn-success">👍 Aceptar</button>
                                     <button onclick="performAction('/change_status/{{ song.id }}/rechazada', this)" class="btn btn-danger">👎 Rechazar</button>
+                                {% elif tab == 'rechazadas' %}
+                                    <button onclick="performAction('/change_status/{{ song.id }}/pendiente', this)" class="btn btn-warning" style="font-weight: 700;">↩ Devolver a Pendiente</button>
+                                    <button onclick="performAction('/delete/{{ song.id }}?tab=rechazadas', this)" class="btn btn-danger">🗑️ Borrar</button>
                                 {% elif tab == 'descargar' %}
                                     <button onclick="performAction('/delete/{{ song.id }}', this)" class="btn btn-danger">🗑️ Borrar</button>
                                     {% if song.lidarr_status == 'enviado' %}
@@ -1560,20 +1850,25 @@
                 
                 {% if total_pages > 1 %}
                 <div class="pagination">
+                    {% set filter_params = '' %}
+                    {% if tab == 'rotas' and filtro %}{% set filter_params = filter_params ~ '&filtro=' ~ filtro %}{% endif %}
+                    {% if selected_radio and selected_radio != 'todas' %}{% set filter_params = filter_params ~ '&radio=' ~ (selected_radio | urlencode) %}{% endif %}
+                    {% if selected_artist and selected_artist != 'todos' %}{% set filter_params = filter_params ~ '&artist=' ~ (selected_artist | urlencode) %}{% endif %}
+
                     {% if page > 1 %}
-                        <a href="/?tab={{ tab }}{% if tab == 'rotas' %}&filtro={{ filtro }}{% endif %}&page={{ page - 1 }}" class="page-link">⬅️ Anterior</a>
+                        <a href="/?tab={{ tab }}{{ filter_params }}&page={{ page - 1 }}" class="page-link">⬅️ Anterior</a>
                     {% endif %}
                     
                     {% for p in range(1, total_pages + 1) %}
                         {% if p == page %}
                             <span class="page-link active">{{ p }}</span>
                         {% elif p >= page - 2 and p <= page + 2 %}
-                            <a href="/?tab={{ tab }}{% if tab == 'rotas' %}&filtro={{ filtro }}{% endif %}&page={{ p }}" class="page-link">{{ p }}</a>
+                            <a href="/?tab={{ tab }}{{ filter_params }}&page={{ p }}" class="page-link">{{ p }}</a>
                         {% endif %}
                     {% endfor %}
                     
                     {% if page < total_pages %}
-                        <a href="/?tab={{ tab }}{% if tab == 'rotas' %}&filtro={{ filtro }}{% endif %}&page={{ page + 1 }}" class="page-link">Siguiente ➡️</a>
+                        <a href="/?tab={{ tab }}{{ filter_params }}&page={{ page + 1 }}" class="page-link">Siguiente ➡️</a>
                     {% endif %}
                 </div>
                 {% endif %}
@@ -1721,6 +2016,101 @@
 
     <!-- SCRIPTS -->
     <script>
+        // Funciones de Filtrado por Radio y Artista
+        function applyRadioFilter(station) {
+            const currentTab = "{{ tab }}";
+            const selectedArtist = "{{ selected_artist }}";
+            let url = `/?tab=${currentTab}&page=1`;
+            if (station && station !== 'todas') url += `&radio=${encodeURIComponent(station)}`;
+            if (selectedArtist && selectedArtist !== 'todos') url += `&artist=${encodeURIComponent(selectedArtist)}`;
+            window.location.href = url;
+        }
+
+        function selectArtistFilter(artist) {
+            const currentTab = "{{ tab }}";
+            const selectedRadio = "{{ selected_radio }}";
+            let url = `/?tab=${currentTab}&page=1`;
+            if (selectedRadio && selectedRadio !== 'todas') url += `&radio=${encodeURIComponent(selectedRadio)}`;
+            if (artist && artist !== 'todos') url += `&artist=${encodeURIComponent(artist)}`;
+            window.location.href = url;
+        }
+
+        function toggleArtistDropdown(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('artistDropdownMenu');
+            const trigger = document.getElementById('artistDropdownTrigger');
+            if (!menu || !trigger) return;
+            const isOpen = menu.style.display === 'block';
+            
+            if (isOpen) {
+                menu.style.display = 'none';
+                trigger.classList.remove('active-dropdown');
+            } else {
+                menu.style.display = 'block';
+                trigger.classList.add('active-dropdown');
+                const searchInput = document.getElementById('artistSearchField');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }
+        }
+
+        function filterArtistList() {
+            const input = document.getElementById('artistSearchField');
+            const clearBtn = document.getElementById('clearSearchBtn');
+            if (!input) return;
+            const term = input.value.trim().toLowerCase();
+            
+            if (clearBtn) {
+                clearBtn.style.display = term.length > 0 ? 'inline-block' : 'none';
+            }
+            
+            const items = document.querySelectorAll('#artistOptionsScroll .dropdown-item-option');
+            let visibleCount = 0;
+            
+            items.forEach(item => {
+                if (item.getAttribute('onclick')?.includes("'todos'")) {
+                    item.style.display = term.length === 0 ? 'flex' : 'none';
+                    if (term.length === 0) visibleCount++;
+                    return;
+                }
+                
+                const name = item.getAttribute('data-name') || '';
+                if (name.includes(term)) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            const noMatch = document.getElementById('noArtistMatchMsg');
+            if (noMatch) {
+                noMatch.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+
+        function clearArtistSearch(e) {
+            e.stopPropagation();
+            const input = document.getElementById('artistSearchField');
+            if (input) {
+                input.value = '';
+                filterArtistList();
+                input.focus();
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('artistSearchableDropdown');
+            const menu = document.getElementById('artistDropdownMenu');
+            const trigger = document.getElementById('artistDropdownTrigger');
+            if (dropdown && menu && !dropdown.contains(e.target)) {
+                menu.style.display = 'none';
+                if (trigger) trigger.classList.remove('active-dropdown');
+            }
+        });
+
         function performAction(url, btn, removeLi = true) {
             const actionsDiv = btn.closest('.actions');
             const buttons = actionsDiv.querySelectorAll('button');

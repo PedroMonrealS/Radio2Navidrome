@@ -69,7 +69,8 @@ def init_db():
 
         columns_descubiertas = [
             ("preview_url", "TEXT"),
-            ("lidarr_status", "VARCHAR(50) DEFAULT ''")
+            ("lidarr_status", "VARCHAR(50) DEFAULT ''"),
+            ("updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
         ]
         for col_name, col_def in columns_descubiertas:
             try:
