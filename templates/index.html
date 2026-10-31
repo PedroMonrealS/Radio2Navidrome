@@ -12,7 +12,69 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <!-- Bibliotecas locales para exportación de historias y GIF -->
-    <script src="/static/js/html2canvas.min.js"></script>
+    <script src="/static/js/html2canvas.min.js">
+        // ================= PEDIR VERSIÓN ORIGINAL LIMPIA =================
+        async function acceptOriginalSong(songId, btn) {
+            if (btn) btn.disabled = true;
+            try {
+                const res = await fetch(`/accept_original/${songId}?ajax=1`);
+                const data = await res.json();
+                if (data.success) {
+                    const li = btn.closest('li');
+                    if (li) {
+                        const toggle = document.getElementById('autoplayToggle');
+                        const autoplay = toggle && toggle.checked;
+                        let nextLi = li.nextElementSibling;
+                        li.style.opacity = '0';
+                        setTimeout(() => {
+                            li.remove();
+                            if (autoplay && nextLi) {
+                                const nextAudio = nextLi.querySelector('audio');
+                                if (nextAudio) {
+                                    nextAudio.play().catch(e => console.log(e));
+                                    nextLi.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                            }
+                        }, 250);
+                    }
+                }
+            } catch (err) {
+                console.error("Error aceptando versión original:", err);
+            }
+        }
+
+        // ================= ATAJOS DE TECLADO EN PENDIENTES =================
+        window.addEventListener('keydown', (e) => {
+            const tag = (document.activeElement && document.activeElement.tagName) ? document.activeElement.tagName.toUpperCase() : '';
+            if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+            const currentTab = "{{ tab }}";
+            if (currentTab !== 'pendientes') return;
+
+            const songList = document.querySelector('ul.song-list');
+            if (!songList) return;
+            const firstLi = songList.querySelector('li');
+            if (!firstLi) return;
+
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                const acceptBtn = firstLi.querySelector('.btn-success');
+                if (acceptBtn) acceptBtn.click();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const rejectBtn = firstLi.querySelector('.btn-danger');
+                if (rejectBtn) rejectBtn.click();
+            } else if (e.code === 'Space') {
+                e.preventDefault();
+                const audio = firstLi.querySelector('audio');
+                if (audio) {
+                    if (audio.paused) audio.play();
+                    else audio.pause();
+                }
+            }
+        });
+
+    </script>
     <script src="/static/js/gifshot.min.js"></script>
     <!-- Chart.js para estadísticas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1551,6 +1613,26 @@
             padding: 9px 12px;
             background: rgba(255, 255, 255, 0.08);
         }
+.radio-filter-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .radio-filter-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--border-highlight);
+        }
+        .radio-filter-btn.active {
+            background: var(--accent-cyan);
+            color: #0a0f1d;
+            border-color: var(--accent-cyan);
+        }
 </style>
 </head>
 <body>
@@ -1565,6 +1647,9 @@
         <div class="master-nav-pill">
             <button class="master-nav-btn active" onclick="switchMasterNav('radio', this)">
                 📻 Monitor de Radio
+            </button>
+            <button class="master-nav-btn" onclick="switchMasterNav('radioStats', this)">
+                📡 Rotación de Radio
             </button>
             <button class="master-nav-btn" onclick="switchMasterNav('stats', this)">
                 📊 Estadísticas de Música
@@ -1609,6 +1694,9 @@
                         <input type="checkbox" id="autoplayToggle" style="transform: scale(1.3); accent-color: var(--accent-green); cursor: pointer;" checked> 
                         🚀 Modo Rápido (Auto-reproducir la siguiente canción al procesar)
                     </label>
+                    <span style="color: var(--text-muted); font-size: 0.85em; margin-left: 14px; font-weight: 600;">
+                        ⌨️ Atajos: [← Rechazar] [→ Aceptar] [Espacio: Play/Pausa]
+                    </span>
                 </div>
 
                 {% if tab in ['pendientes', 'rechazadas'] %}
@@ -1763,6 +1851,23 @@
                                 <span class="artist">{{ song.artist }}</span> <span style="color: var(--text-muted); margin: 0 4px;">-</span> <span class="title">{{ song.title }}</span>
                                 {% if song.station %}
                                 <span class="station">📻 Emisora: {{ song.station }}</span>
+                                {% endif %}
+                                
+                                {% if song.is_version %}
+                                <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <span style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); padding: 3px 8px; border-radius: 6px; font-size: 0.8em; font-weight: 700;">
+                                        ⚡ Versión / Remix: {{ song.version_tag }}
+                                    </span>
+                                    {% if song.original_in_library %}
+                                    <span style="background: rgba(34, 197, 94, 0.15); color: var(--accent-green); border: 1px solid rgba(34, 197, 94, 0.35); padding: 3px 8px; border-radius: 6px; font-size: 0.8em; font-weight: 700;">
+                                        ✅ Ya tienes el original ("{{ song.library_match_title or song.original_title }}")
+                                    </span>
+                                    {% elif tab == 'pendientes' %}
+                                    <button type="button" onclick="acceptOriginalSong({{ song.id }}, this)" class="btn btn-warning" style="padding: 3px 10px; font-size: 0.8em; font-weight: 700;" title="Aceptar pidiendo la versión original pura a Lidarr">
+                                        ⭐ Pedir Original ("{{ song.original_title }}")
+                                    </button>
+                                    {% endif %}
+                                </div>
                                 {% endif %}
                                 
                                 {% if tab == 'rechazadas' %}
@@ -2010,6 +2115,96 @@
                 </div>
             </div>
         </div><!-- Cierre secHistory -->
+
+
+        <!-- ================= SECCIÓN 4: ROTACIÓN & MANIPULACIÓN DE RADIO ================= -->
+        <div id="secRadioStats" style="display: none;">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 1.4em; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                            📡 Estudio de Rotación de Radio & ¿Manipulación?
+                        </h2>
+                        <small style="color: var(--text-muted); font-size: 0.9em;">
+                            Monitoreo en tiempo real de repetición, bucle musical e intervalos entre emisiones de cada emisora.
+                        </small>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 6px;">
+                            <button class="radio-filter-btn active" onclick="changeRadioStatsPeriod('today', this)">Hoy</button>
+                            <button class="radio-filter-btn" onclick="changeRadioStatsPeriod('week', this)">Semana</button>
+                            <button class="radio-filter-btn" onclick="changeRadioStatsPeriod('month', this)">Mes</button>
+                            <button class="radio-filter-btn" onclick="changeRadioStatsPeriod('all', this)">Todo</button>
+                        </div>
+                        <select id="radioStatsStationSelect" class="dark-input" style="padding: 7px 14px; border-radius: 20px; font-size: 0.88em;" onchange="changeRadioStatsStation(this.value)">
+                            <option value="todas">Todas las emisoras</option>
+                        </select>
+                        <button class="btn btn-info" onclick="loadRadioRotationDashboard()">🔄 Refrescar</button>
+                    </div>
+                </div>
+
+                <!-- 3 Tarjetas de Resumen -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 28px;">
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+                        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); display: flex; align-items: center; justify-content: center; font-size: 1.6em;">📡</div>
+                        <div>
+                            <div style="font-size: 0.8em; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Total Canciones Emitidas</div>
+                            <div id="radioStatTotalEmisiones" style="font-size: 2em; font-weight: 800; color: var(--text-primary);">-</div>
+                        </div>
+                    </div>
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+                        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(34, 197, 94, 0.15); color: var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 1.6em;">🎵</div>
+                        <div>
+                            <div style="font-size: 0.8em; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Canciones Únicas</div>
+                            <div id="radioStatCancionesUnicas" style="font-size: 2em; font-weight: 800; color: var(--text-primary);">-</div>
+                        </div>
+                    </div>
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+                        <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(239, 68, 68, 0.15); color: #f87171; display: flex; align-items: center; justify-content: center; font-size: 1.6em;">🔄</div>
+                        <div>
+                            <div style="font-size: 0.8em; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Índice de Bucle (Repetición)</div>
+                            <div id="radioStatIndiceRepeticion" style="font-size: 2em; font-weight: 800; color: #f87171;">-%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Principal: Ranking de Repetidas + Comparativa de Emisoras -->
+                <div style="display: grid; grid-template-columns: minmax(360px, 2fr) minmax(300px, 1.2fr); gap: 24px; margin-bottom: 28px;">
+                    <!-- Ranking de Canciones Quemadas -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px;">
+                        <h3 style="margin-top: 0; margin-bottom: 18px; font-size: 1.1em; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                            <span>🔥</span> Canciones Más Repetidas en Radio ("Las Más Quemadas")
+                        </h3>
+                        <div id="radioTopRepetidasList" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="color: var(--text-muted); padding: 20px; text-align: center;">Cargando rotación de radio...</div>
+                        </div>
+                    </div>
+
+                    <!-- Lateral: Ranking Emisoras & Artistas -->
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        <!-- Comparativa por Emisoras -->
+                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px;">
+                            <h3 style="margin-top: 0; margin-bottom: 18px; font-size: 1.05em; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                <span>📻</span> ¿Quién Repite Más? (Por Emisora)
+                            </h3>
+                            <div id="radioEmisorasComparisonList" style="display: flex; flex-direction: column; gap: 10px;">
+                                <div style="color: var(--text-muted); text-align: center; padding: 15px;">Cargando emisoras...</div>
+                            </div>
+                        </div>
+
+                        <!-- Top Artistas en Radio -->
+                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 22px;">
+                            <h3 style="margin-top: 0; margin-bottom: 18px; font-size: 1.05em; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                <span>🎤</span> Artistas con Más Emisiones
+                            </h3>
+                            <div id="radioTopArtistasList" style="display: flex; flex-direction: column; gap: 8px;">
+                                <div style="color: var(--text-muted); text-align: center; padding: 15px;">Cargando artistas...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- Cierre secRadioStats -->
 
     </div><!-- Cierre main-wrapper -->
 
@@ -2282,13 +2477,131 @@
             if (btn) btn.classList.add('active');
 
             document.getElementById('secRadio').style.display = (section === 'radio') ? 'block' : 'none';
+            const secRadioStats = document.getElementById('secRadioStats');
+            if (secRadioStats) secRadioStats.style.display = (section === 'radioStats') ? 'block' : 'none';
             document.getElementById('secStats').style.display = (section === 'stats') ? 'block' : 'none';
             document.getElementById('secHistory').style.display = (section === 'history') ? 'block' : 'none';
 
-            if (section === 'stats') {
+            if (section === 'radioStats') {
+                loadRadioRotationDashboard();
+            } else if (section === 'stats') {
                 loadStatsDashboard();
             } else if (section === 'history') {
                 loadLiveHistory(true);
+            }
+        }
+
+        let radioStatsPeriod = 'today';
+        let radioStatsStation = 'todas';
+
+        function changeRadioStatsPeriod(p, btn) {
+            radioStatsPeriod = p;
+            document.querySelectorAll('.radio-filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            loadRadioRotationDashboard();
+        }
+
+        function changeRadioStatsStation(s) {
+            radioStatsStation = s;
+            loadRadioRotationDashboard();
+        }
+
+        async function loadRadioRotationDashboard() {
+            try {
+                const res = await fetch(`/api/radio/rotation-stats?period=${radioStatsPeriod}&station=${encodeURIComponent(radioStatsStation)}`);
+                const data = await res.json();
+
+                document.getElementById('radioStatTotalEmisiones').innerText = Number(data.total_emisiones || 0).toLocaleString();
+                document.getElementById('radioStatCancionesUnicas').innerText = Number(data.canciones_unicas || 0).toLocaleString();
+                
+                const repEl = document.getElementById('radioStatIndiceRepeticion');
+                const repVal = data.indice_repeticion || 0;
+                repEl.innerText = repVal + '%';
+                if (repVal > 50) {
+                    repEl.style.color = '#ef4444';
+                } else if (repVal > 25) {
+                    repEl.style.color = '#f59e0b';
+                } else {
+                    repEl.style.color = 'var(--accent-green)';
+                }
+
+                const selectEl = document.getElementById('radioStatsStationSelect');
+                if (selectEl && data.available_stations) {
+                    const currentVal = selectEl.value;
+                    let opts = '<option value="todas">Todas las emisoras</option>';
+                    data.available_stations.forEach(st => {
+                        opts += `<option value="${st}" ${st === currentVal ? 'selected' : ''}>${st}</option>`;
+                    });
+                    selectEl.innerHTML = opts;
+                    if (currentVal) selectEl.value = currentVal;
+                }
+
+                const repList = document.getElementById('radioTopRepetidasList');
+                if (repList) {
+                    if (!data.top_repetidas || data.top_repetidas.length === 0) {
+                        repList.innerHTML = '<div style="color: var(--text-muted); padding: 25px; text-align: center;">Sin canciones repetidas detectadas en este periodo aún.<br><small>A medida que la radio emita, aparecerán aquí las canciones en bucle.</small></div>';
+                    } else {
+                        repList.innerHTML = data.top_repetidas.map((item, idx) => `
+                            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-weight: 800; font-size: 1.1em; color: ${idx < 3 ? '#f59e0b' : 'var(--text-muted)'}; min-width: 24px;">#${idx + 1}</span>
+                                    <div>
+                                        <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95em;">${item.title}</div>
+                                        <div style="font-size: 0.82em; color: var(--text-secondary);">${item.artist} <span style="color: var(--text-muted); font-size: 0.85em;">● 📻 ${item.station}</span></div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <span style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); padding: 3px 10px; border-radius: 20px; font-weight: 800; font-size: 0.82em;">
+                                        🔥 ${item.veces_sonada} veces
+                                    </span>
+                                    <span style="background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.3); padding: 3px 10px; border-radius: 20px; font-weight: 700; font-size: 0.8em;" title="Frecuencia media entre emisiones">
+                                        ⏱️ ${item.frecuencia}
+                                    </span>
+                                    <span style="font-size: 0.78em; color: var(--text-muted);" title="Última vez que sonó">
+                                        🕒 ${item.ultima_emision_str || ''}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                const emisorasList = document.getElementById('radioEmisorasComparisonList');
+                if (emisorasList) {
+                    if (!data.ranking_emisoras || data.ranking_emisoras.length === 0) {
+                        emisorasList.innerHTML = '<div style="color: var(--text-muted); padding: 15px; text-align: center;">Sin datos de emisoras.</div>';
+                    } else {
+                        emisorasList.innerHTML = data.ranking_emisoras.map(e => `
+                            <div style="background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: 700; font-size: 0.9em; color: var(--text-primary);">📻 ${e.station}</div>
+                                    <div style="font-size: 0.78em; color: var(--text-muted);">${e.total} emisiones (${e.unicas} canciones distintas)</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-weight: 800; font-size: 0.85em; color: ${e.repeticion_pct > 40 ? '#f87171' : 'var(--accent-green)'};">
+                                        ${e.repeticion_pct}% bucle
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                const artList = document.getElementById('radioTopArtistasList');
+                if (artList) {
+                    if (!data.top_artistas || data.top_artistas.length === 0) {
+                        artList.innerHTML = '<div style="color: var(--text-muted); padding: 15px; text-align: center;">Sin artistas detectados.</div>';
+                    } else {
+                        artList.innerHTML = data.top_artistas.map((a, i) => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <span style="color: var(--text-primary); font-weight: 600;">${i + 1}. ${a.artist}</span>
+                                <span style="color: var(--accent-cyan); font-weight: 700;">${a.total_emisiones} emisiones</span>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (err) {
+                console.error("Error cargando dashboard de rotación de radio:", err);
             }
         }
 

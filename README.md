@@ -9,9 +9,25 @@ Plataforma integral y automatizada que conecta la **radio en directo** con tu se
 ### 1. 📡 Monitor de Radio y Descubrimientos en Vivo
 - **Escucha continua y paralela**: Monitoriza las APIs en tiempo real de las principales emisoras (LOS40, CADENA 100, Dial, KISS FM, etc.).
 - **Fuzzy Matching inteligente**: Cruza cada tema detectado con tu catálogo de Navidrome tolerando variaciones sintácticas en artistas y títulos (ej. *Avicii feat. Dan* vs *Avicii, Dan*).
-- **Pre-escucha de 30 segundos**: Obtiene automáticamente el clip de audio oficial vía iTunes API para escuchar antes de decidir.
-- **Modo Rápido**: Opción de auto-reproducir la siguiente canción de la lista conforme aceptas o descartas la actual.
+- **Pre-escucha y Reproductor Sticky Flotante**:
+  - Eliminación de barras nativas pesadas en cada fila. Ahora la interfaz cuenta con un **Reproductor Flotante Inferior Fijo (Sticky Bottom Player)** estilo Spotify/Apple Music con línea temporal interactiva (30s), volumen y botones de acción rápida.
+- **Atajos de Teclado Globales ("Tinder Musical")**:
+  - Permite clasificar cientos de canciones a la máxima velocidad sin usar el ratón:
+  - **`Flecha Derecha (→)`**: Aceptar canción actual.
+  - **`Flecha Izquierda (←)`**: Rechazar canción actual.
+  - **`Barra Espaciadora`**: Reproducir / Pausar muestra de 30 segundos.
+  - **`Flechas Arriba / Abajo (↑ / ↓)`**: Navegar y enfocar canciones de la lista con auto-scroll suave.
+- **Detector de Versiones, Remixes y Edits Radiofónicos ("¡Solo Originales!")**:
+  - Detecta automáticamente si una canción es un `Remix`, `Radio Edit`, `Club Mix`, `Versión Acústica`, `En Vivo/Live`, `Cover` o `Sped Up`.
+  - **Cruce en tiempo real con Navidrome**: Si la radio emite un remix de un tema cuyo original ya tienes, te avisa con la insignia `✅ Ya tienes el original ("...")`.
+  - **Botón `⭐ Pedir Original`**: Permite aceptar la canción convirtiéndola instantáneamente a su título de estudio original limpio para que Lidarr descargue la pista pura sin remixes.
+  - **Filtro de Tipo**: Selector en la barra de herramientas para alternar entre `⭐ Todas`, `💿 Solo Originales` y `⚡ Solo Versiones / Remixes`.
+- **Modo Rápido Compacto**: Switch tipo iOS integrado en la barra de herramientas que auto-reproduce el siguiente tema de forma fluida conforme aceptas o descartas el actual.
+- **Nueva Paleta Visual Minimalista (Obsidian & Slate con Índigo Eléctrico)**:
+  - Fondo carbón pizarra profundo sin estridencias, eliminando neones saturados.
+  - Filas estilizadas de 48px que permiten visualizar más del doble de canciones por pantalla.
 - **Filtros Avanzados en Tiempo Real**:
+  - **Ordenación Agrupada por Artista**: En la lista de pendientes, las canciones se muestran ordenadas por volumen de temas por artista (de mayor a menor) manteniendo el diseño limpio y uniforme original de cada tarjeta, apareciendo consecutivas todas las canciones del mismo artista.
   - **Filtro por Emisora**: Selector con el recuento exacto de canciones disponibles por radio.
   - **Filtro por Artista con Desplegable y Buscador Interno**: Menú desplegable con input `🔍` de búsqueda en vivo que filtra los artistas instantáneamente al escribir, con badges de conteo y botón para limpiar filtros.
 - **Pestaña 🚫 Rechazadas**:
@@ -29,6 +45,17 @@ Plataforma integral y automatizada que conecta la **radio en directo** con tu se
   - **Manual con 1 clic**: Botón **`⚡ Forzar qBittorrent`** en la interfaz para desatascar descargas al instante.
 
 ### 3. 📑 Auditoría de Biblioteca y Playlists
+- **🪄 Smart Playlists Dinámicas en Navidrome**:
+  - **`📻 Descubrimientos de Radio`**: Sincroniza automáticamente en Navidrome las 50 canciones más recientes descubiertas de la radio e incorporadas a tu catálogo.
+  - **`🔥 Top 50 Más Escuchados`**: Sincroniza automáticamente en Navidrome tu ranking de canciones más reproducidas extraídas de tus estadísticas.
+  - Botón **`🪄 Smart Playlists`** en la interfaz y sincronización automática periódica en segundo plano.
+- **👯 Duplicados en Playlist**:
+  - Detección en tiempo real de canciones que aparecen múltiples veces en tu playlist de Navidrome (por título, artista o ID de archivo).
+  - Indicador de número total de copias en la playlist y álbumes de los que proceden.
+  - Reproductor con pre-escucha de 30 segundos.
+  - Botón individual **`🧹 Dejar solo 1 copia`** para limpiar cualquier canción concreta.
+  - Botón masivo **`🧹 Eliminar Todos los Duplicados a la Vez`**: Limpia todas las copias redundantes de la playlist en lotes descendentes conservando la primera instancia sin alterar el orden del resto.
+  - Protección automática contra duplicados: el sistema verifica si la canción ya existe antes de añadirla para prevenir futuras duplicaciones.
 - **🎶 Falta Playlist**: Detecta canciones presentes en tu disco/Navidrome que no han sido añadidas aún a tu playlist objetivo y permite vincularlas con un clic.
 - **⚠️ Huérfanas y Rotas**:
   - Identifica canciones desaparecidas del disco o renombradas.
@@ -38,11 +65,12 @@ Plataforma integral y automatizada que conecta la **radio en directo** con tu se
 ### 4. 📊 Panel de Estadísticas e Historial de Escuchas
 - Conexión con base de datos de scrobbles (`spotify_db`).
 - **Filtro por periodos temporales**: *Hoy, Semana, Mes, Año o Todo*.
+- **Comparativa Temporal de Tendencias**: Tarjeta inteligente que compara el periodo seleccionado contra su anterior equivalente (ej. esta semana vs semana anterior) mostrando variación porcentual de escuchas, temas únicos y el **Artista en Alza** con mayor crecimiento.
 - Métricas clave: Minutos totales de escucha, canciones únicas, promedio diario y pico de actividad.
-- Gráficos interactivos con Chart.js:
-  - Distribución horaria y mapa de horas más activas.
-  - Top 10 artistas más reproducidos.
-  - Top 10 pistas más escuchadas.
+- **Top Canciones Más Escuchadas**: Fila horizontal con portadas circulares idéntica a los artistas más escuchados, con badge dinámico de reproducciones y artista.
+- **Top Artistas Más Escuchados**: Círculos interactivos con foto del artista y total de escuchas.
+- **Top Álbumes Más Escuchados**: Portadas de álbumes con contador y artista principal.
+- Gráficos interactivos con Chart.js (distribución de cuota de escuchas por artista).
 - **Historial lineal de reproducciones**: Línea temporal con portada, título, artista, álbum y hora exacta.
 
 ### 5. ✨ Music Wrapped Interactivo (Estilo Spotify Wrapped / Historias 9:16)
@@ -71,9 +99,31 @@ Plataforma integral y automatizada que conecta la **radio en directo** con tu se
   - **Descarga en ZIP** con todas las historias en alta resolución.
   - **Exportar GIF Animado**: Grabación y compilación en el cliente con `html2canvas` y `gifshot` optimizada para compartir en redes sociales.
 
-### 6. 🕒 Zona Horaria de España (`Europe/Madrid`)
+### 6. 📡 Estudio de Rotación de Radio & ¿Manipulación?
+- **Auditoría continua de emisiones en tiempo real**: Registra cada evento musical transmitido por las emisoras en una tabla dedicada de alta eficiencia (`radio_emisiones`).
+- **Prevención de saturación y almacenamiento ligero**: Gracias a la clave única `(station, artist, title, start_time)` y sentencias `INSERT IGNORE`, almacena todo un año de emisiones (~650.000 registros) en apenas 35 MB sin duplicados ni sobrecarga.
+- **Métricas e Índice de Bucle**:
+  - Total de canciones emitidas vs canciones únicas reales en emisión.
+  - **Índice de Repetición / Bucle (%)**: Mide con precisión qué porcentaje de la parrilla musical son temas repetidos.
+- **Ranking de Canciones Más Repetidas ("Las Más Quemadas")**:
+  - Cuenta el número exacto de veces que ha sonado cada canción.
+  - **Frecuencia media calculada**: Muestra el intervalo promedio entre emisiones (ej. *cada 2h 45m*).
+  - Fecha y hora exacta de la última emisión detectada.
+- **Comparativa por Emisora**: Ranking de qué radio tiene el mayor porcentaje de bucle y cuál ofrece mayor variedad musical.
+- **Top Artistas en Radio**: Listado de los artistas que acumulan más horas y emisiones en las ondas.
+- **Filtros Temporales y por Dial**: Permite alternar instantáneamente entre *Hoy, Semana, Mes o Todo el histórico*, así como aislar una emisora concreta.
+
+### 7. 🕒 Zona Horaria de España (`Europe/Madrid`)
 - Todas las conexiones SQL establecen automáticamente `SET time_zone = 'Europe/Madrid'`.
 - Evita desfases de ±1 hora por el cambio de horario de verano/invierno (Daylight Saving Time).
+
+### 8. 🤖 Bot de Notificaciones en Telegram
+- Envío automático de notificaciones a grupos y temas/hilos específicos de Telegram.
+- **Canal y Tema configurados**: `https://t.me/c/3998145275/24788` (`chat_id = -1003998145275`, `message_thread_id = 24788`).
+- **Avisos automáticos**:
+  - Peticiones enviadas a Lidarr (`🛸`).
+  - Canciones descargadas con éxito e incorporadas a la playlist de Navidrome (`🎉`).
+- Endpoint de prueba: `POST /api/telegram/test`.
 
 ---
 
@@ -90,11 +140,15 @@ Radio2Navidrome/
 ├── routes/
 │   ├── __init__.py             # Registro de Blueprints
 │   ├── radio_routes.py         # Endpoints de radio, filtrado, descargas y qBittorrent
-│   └── stats_routes.py         # Endpoints de estadísticas, historial y Music Wrapped API
+│   └── stats_routes.py         # Endpoints de estadísticas, historial, rotación de radio y Music Wrapped
 ├── services/
 │   ├── __init__.py
-│   ├── radio_monitor.py        # Bucle de escucha continua de emisoras
+│   ├── radio_monitor.py        # Bucle de escucha continua de emisoras y registro de emisiones
+│   ├── radio_stats_service.py  # Análisis de rotación de radio, frecuencias y cálculo de bucle
+│   ├── version_detector.py     # Detector inteligente de versiones/remixes y extracción de originales
 │   ├── navidrome.py            # Cliente API Subsonic/Navidrome (búsquedas, playlists, estrellas)
+│   ├── smart_playlists.py      # Gestor dinámico de Smart Playlists en Navidrome
+│   ├── telegram_service.py     # Cliente bot de Telegram con soporte para temas/hilos
 │   ├── lidarr.py               # Integración con API de Lidarr (búsqueda y descarga en lote)
 │   ├── qbit_service.py         # Integración Web API qBittorrent v2 (forzar inicio y recomunicación)
 │   ├── auditor.py              # Auditoría de biblioteca, detección de huérfanas y renombradas
@@ -188,9 +242,13 @@ El servicio creará y actualizará automáticamente las tablas necesarias de la 
 | `GET` | `/?tab=playlist` | Canciones descargadas que faltan por añadir a la playlist |
 | `GET` | `/?tab=rotas` | Canciones renombradas o desaparecidas del disco |
 | `GET` | `/change_status/<id>/<status>` | Cambia el estado a `aceptada`, `rechazada` o `pendiente` |
+| `GET` | `/accept_original/<id>` | Limpia el título a la versión original de estudio y la marca como aceptada |
 | `POST` | `/send_all_lidarr` | Inicia la petición por lotes a Lidarr en segundo plano |
 | `GET` | `/send_all_lidarr_status` | Devuelve el progreso actual del lote de Lidarr |
 | `POST` | `/api/qbit/force-refresh` | Fuerza inicio y recomunicación de rastreadores en qBittorrent |
+| `GET` | `/api/radio/rotation-stats` | Devuelve rotación de radio, porcentaje de bucle y temas más repetidos |
+| `POST` | `/api/smart-playlists/sync` | Sincroniza las playlists inteligentes de Navidrome manualmente |
+| `POST` | `/api/telegram/test` | Envía mensaje de prueba al hilo configurado del bot de Telegram |
 | `GET` | `/api/stats?period=<periodo>` | Devuelve métricas y datos para los gráficos de estadísticas |
 | `GET` | `/api/history?page=<p>` | Devuelve el historial cronológico de reproducciones paginado |
 | `GET` | `/api/wrapped` | Devuelve el conjunto completo de datos para el Music Wrapped interactivo |

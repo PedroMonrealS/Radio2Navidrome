@@ -7,7 +7,10 @@ from services.navidrome import (
     get_playlist_track_ids,
     add_song_to_playlist,
     remove_song_from_playlist,
-    star_song_in_navidrome
+    star_song_in_navidrome,
+    get_playlist_duplicates,
+    remove_song_duplicates,
+    remove_all_duplicates_from_playlist
 )
 from services.lidarr import (
     request_lidarr_song,
@@ -21,6 +24,7 @@ from services.auditor import (
     sync_playlist_faltantes
 )
 from services.qbit_service import force_start_and_reannounce_torrents
+from services.version_detector import enrich_songs_with_version_info, detect_song_version
 
 radio_bp = Blueprint('radio_bp', __name__)
 
@@ -33,8 +37,11 @@ def index():
     page = int(request.args.get('page', 1))
     radio = request.args.get('radio', '').strip()
     artist = request.args.get('artist', '').strip()
+    version_filter = request.args.get('version', 'todas').strip()
     per_page = 30
     offset = (page - 1) * per_page
+    
+    version_sql_pattern = r'(\([^)]*(remix|rmx|mix|radio edit|club mix|extended|acoustic|live|en vivo|en directo|cover|versio|edit)[^)]*\)|[-/][ ]*(.*(remix|rmx|radio edit|club mix|acoustic|live|cover|versio)))'
     
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -60,6 +67,12 @@ def index():
     
     cursor.execute("SELECT COUNT(*) as c FROM canciones_libreria WHERE estado_archivo = 'desaparecida'")
     count_desaparecidas = cursor.fetchone()['c']
+
+    # Detección de canciones duplicadas en la playlist objetivo
+    dup_info = get_playlist_duplicates()
+    count_duplicados = dup_info['total_duplicates']
+    total_redundant = dup_info['total_redundant']
+    playlist_name = dup_info['playlist_name']
 
     # Emisoras y artistas disponibles para filtros en pendientes y rechazadas
     available_radios = []
@@ -99,12 +112,24 @@ def index():
         if artist and artist != 'todos':
             where_clauses.append("artist = %s")
             params.append(artist)
+        if version_filter == 'originales':
+            where_clauses.append(f"title NOT REGEXP '{version_sql_pattern}'")
+        elif version_filter == 'versiones':
+            where_clauses.append(f"title REGEXP '{version_sql_pattern}'")
             
         where_sql = " AND ".join(where_clauses)
         cursor.execute(f"SELECT COUNT(*) as c FROM canciones_descubiertas WHERE {where_sql}", tuple(params))
         total_items = cursor.fetchone()['c']
         
-        cursor.execute(f"SELECT * FROM canciones_descubiertas WHERE {where_sql} ORDER BY discovered_at DESC LIMIT %s OFFSET %s", tuple(params + [per_page, offset]))
+        # Agrupar por artista y ordenar de mayor cantidad de canciones pendientes a menor
+        query = f"""
+            SELECT *, COUNT(*) OVER (PARTITION BY artist) as artist_count
+            FROM canciones_descubiertas 
+            WHERE {where_sql} 
+            ORDER BY artist_count DESC, artist ASC, discovered_at DESC, id DESC 
+            LIMIT %s OFFSET %s
+        """
+        cursor.execute(query, tuple(params + [per_page, offset]))
         data = cursor.fetchall()
 
     elif tab == 'rechazadas':
@@ -116,6 +141,10 @@ def index():
         if artist and artist != 'todos':
             where_clauses.append("artist = %s")
             params.append(artist)
+        if version_filter == 'originales':
+            where_clauses.append(f"title NOT REGEXP '{version_sql_pattern}'")
+        elif version_filter == 'versiones':
+            where_clauses.append(f"title REGEXP '{version_sql_pattern}'")
             
         where_sql = " AND ".join(where_clauses)
         cursor.execute(f"SELECT COUNT(*) as c FROM canciones_descubiertas WHERE {where_sql}", tuple(params))
@@ -146,7 +175,11 @@ def index():
             total_items = cursor.fetchone()['c']
             cursor.execute("SELECT * FROM canciones_libreria WHERE estado_archivo != 'ok' ORDER BY FIELD(estado_archivo, 'renombrada', 'desaparecida'), en_playlist DESC, id DESC LIMIT %s OFFSET %s", (per_page, offset))
         data = cursor.fetchall()
+    elif tab == 'duplicados':
+        total_items = count_duplicados
+        data = dup_info['duplicates'][offset:offset + per_page]
         
+    data = enrich_songs_with_version_info(data, conn)
     conn.close()
     
     total_pages = (total_items + per_page - 1) // per_page
@@ -159,8 +192,11 @@ def index():
                            filtro=filtro,
                            selected_radio=radio,
                            selected_artist=artist,
+                           selected_version=version_filter,
                            available_radios=available_radios,
                            available_artists=available_artists,
+                           total_redundant=total_redundant,
+                           playlist_name=playlist_name,
                            counts={
                                'pendientes': count_pendientes, 
                                'descargar': count_aceptadas, 
@@ -168,7 +204,8 @@ def index():
                                'playlist': count_sin_playlist,
                                'rotas': count_rotas,
                                'renombradas': count_renombradas,
-                               'desaparecidas': count_desaparecidas
+                               'desaparecidas': count_desaparecidas,
+                               'duplicados': count_duplicados
                            })
 
 @radio_bp.route('/force_sync')
@@ -209,6 +246,31 @@ def change_status(song_id, status):
             pass
     if request.args.get('ajax'):
         return ajax_response()
+    return redirect(url_for('.index', tab=request.args.get('tab', 'pendientes')))
+
+@radio_bp.route('/accept_original/<int:song_id>')
+def accept_original(song_id):
+    clean_title = ""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, artist, title FROM canciones_descubiertas WHERE id = %s", (song_id,))
+        song = cursor.fetchone()
+        if song:
+            _, _, clean_title = detect_song_version(song['title'])
+            if not clean_title:
+                clean_title = song['title']
+            cursor.execute("""
+                UPDATE canciones_descubiertas 
+                SET title = %s, estado = 'aceptada', updated_at = CURRENT_TIMESTAMP 
+                WHERE id = %s
+            """, (clean_title, song_id))
+            conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error aceptando versión original: {e}")
+    if request.args.get('ajax'):
+        return jsonify({"success": True, "original_title": clean_title})
     return redirect(url_for('.index', tab=request.args.get('tab', 'pendientes')))
 
 @radio_bp.route('/send_lidarr/<int:song_id>')
@@ -533,3 +595,43 @@ def redownload_song(db_id):
         if request.args.get('ajax'):
             return jsonify({"success": False, "message": str(e)})
     return redirect(url_for('.index', tab='rotas'))
+
+@radio_bp.route('/api/playlist/remove_song_duplicates', methods=['POST'])
+def api_remove_song_duplicates():
+    data = request.get_json(silent=True) or request.form
+    artist = data.get('artist', '').strip()
+    title = data.get('title', '').strip()
+    if not artist or not title:
+        return jsonify({"success": False, "error": "Faltan parámetros artist o title"}), 400
+    try:
+        res = remove_song_duplicates(artist, title)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@radio_bp.route('/api/playlist/remove_all_duplicates', methods=['POST'])
+def api_remove_all_duplicates():
+    try:
+        res = remove_all_duplicates_from_playlist()
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@radio_bp.route('/api/telegram/test', methods=['POST'])
+def api_telegram_test():
+    from services.telegram_service import send_telegram_notification
+    success, msg = send_telegram_notification(
+        "Test de Notificación NaviRadio",
+        "✅ ¡El bot de Telegram está correctamente conectado con tu grupo y tema!",
+        emoji="🤖"
+    )
+    return jsonify({"success": success, "message": msg})
+
+@radio_bp.route('/api/playlists/sync_smart_playlists', methods=['POST'])
+def api_sync_smart_playlists():
+    from services.smart_playlists import sync_all_smart_playlists
+    try:
+        res = sync_all_smart_playlists()
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500

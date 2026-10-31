@@ -2,12 +2,15 @@ import requests
 from flask import Blueprint, request, jsonify, Response
 from services.stats_service import (
     get_stats,
+    get_period_comparison,
     get_top_artists,
     get_top_albums,
+    get_top_songs,
     get_songs,
     get_history,
     get_wrapped_data
 )
+from services.radio_stats_service import get_radio_rotation_stats
 
 stats_bp = Blueprint('stats_bp', __name__)
 
@@ -21,6 +24,16 @@ def api_stats():
         print(f"Error api_stats: {e}")
         return jsonify({"error": str(e)}), 500
 
+@stats_bp.route('/api/stats-comparison')
+def api_stats_comparison():
+    range_val = request.args.get('range', 'week')
+    try:
+        data = get_period_comparison(range_val)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error api_stats_comparison: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @stats_bp.route('/api/top-artists')
 def api_top_artists():
     range_val = request.args.get('range', 'all')
@@ -29,6 +42,16 @@ def api_top_artists():
         return jsonify(data)
     except Exception as e:
         print(f"Error api_top_artists: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@stats_bp.route('/api/top-songs')
+def api_top_songs():
+    range_val = request.args.get('range', 'all')
+    try:
+        data = get_top_songs(range_val)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error api_top_songs: {e}")
         return jsonify({"error": str(e)}), 500
 
 @stats_bp.route('/api/top-albums')
@@ -87,3 +110,14 @@ def api_proxy_image():
     except Exception as e:
         print(f"Error proxying image {url}: {e}")
         return "Error fetching image", 500
+
+@stats_bp.route('/api/radio/rotation-stats')
+def api_radio_rotation_stats():
+    period = request.args.get('period', 'today')
+    station = request.args.get('station', 'todas')
+    try:
+        data = get_radio_rotation_stats(period, station)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error api_radio_rotation_stats: {e}")
+        return jsonify({"error": str(e)}), 500

@@ -2,6 +2,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from database import get_db_connection
 from services.utils import is_same_song, get_itunes_preview
+from services.telegram_service import send_telegram_notification
 from services.navidrome import (
     get_target_playlist_id,
     get_playlist_track_ids,
@@ -57,6 +58,11 @@ def sync_aceptadas_to_libreria():
                 VALUES (%s, %s, %s, %s, %s)
             """, (row['title'], row['artist'], nav_id, en_play, row['preview_url']))
             cursor.execute("DELETE FROM canciones_descubiertas WHERE id = %s", (row['id'],))
+            send_telegram_notification(
+                "Canción Añadida a Navidrome",
+                f"🎵 <b>{row['title']}</b> - <i>{row['artist']}</i>\n📥 Descargada con éxito e incorporada a tu playlist.",
+                emoji="🎉"
+            )
     conn.commit()
     conn.close()
 

@@ -35,6 +35,92 @@ def get_stats(range_val='today'):
         "listens_count": int(stats.get('listens_count', 0))
     }
 
+def get_period_comparison(range_val='week'):
+    """Calcula la comparativa de tendencias respecto al periodo anterior equivalente"""
+    if range_val not in ['today', 'week', 'month', 'year']:
+        return {"has_comparison": False}
+
+    intervals = {
+        'today': (1, 2, 'ayer'),
+        'week': (7, 14, 'la semana anterior'),
+        'month': (30, 60, 'el mes anterior'),
+        'year': (365, 730, 'el año anterior')
+    }
+
+    cur_days, prev_days, comp_label = intervals[range_val]
+
+    conn = get_stats_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    query = f"""
+        SELECT 
+            COUNT(CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN 1 END) as cur_listens,
+            COUNT(CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY) AND e.reproducido_en < DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN 1 END) as prev_listens,
+            COUNT(DISTINCT CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN e.spotify_id_cancion END) as cur_songs,
+            COUNT(DISTINCT CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY) AND e.reproducido_en < DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN e.spotify_id_cancion END) as prev_songs
+        FROM escuchas e
+        WHERE e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY);
+    """
+    cursor.execute(query)
+    row = cursor.fetchone() or {}
+
+    cur_listens = int(row.get('cur_listens', 0))
+    prev_listens = int(row.get('prev_listens', 0))
+    cur_songs = int(row.get('cur_songs', 0))
+    prev_songs = int(row.get('prev_songs', 0))
+
+    if prev_listens > 0:
+        listens_pct = round(((cur_listens - prev_listens) / prev_listens) * 100, 1)
+    else:
+        listens_pct = 100.0 if cur_listens > 0 else 0.0
+
+    if prev_songs > 0:
+        songs_pct = round(((cur_songs - prev_songs) / prev_songs) * 100, 1)
+    else:
+        songs_pct = 100.0 if cur_songs > 0 else 0.0
+
+    rising_query = f"""
+        SELECT * FROM (
+            SELECT 
+                a.nombre,
+                COUNT(CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN 1 END) as cur_count,
+                COUNT(CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY) AND e.reproducido_en < DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN 1 END) as prev_count
+            FROM escuchas e
+            JOIN cancion_autor ca ON e.spotify_id_cancion = ca.cancion_id
+            JOIN autores a ON ca.autor_id = a.spotify_id
+            WHERE e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY)
+            GROUP BY a.spotify_id, a.nombre
+        ) sub
+        WHERE cur_count > prev_count
+        ORDER BY (cur_count - prev_count) DESC
+        LIMIT 1;
+    """
+    cursor.execute(rising_query)
+    top_rising_row = cursor.fetchone()
+    top_rising = None
+    if top_rising_row:
+        diff = top_rising_row['cur_count'] - top_rising_row['prev_count']
+        top_rising = {
+            "nombre": top_rising_row['nombre'],
+            "crecimiento": diff,
+            "cur_count": top_rising_row['cur_count']
+        }
+
+    cursor.close()
+    conn.close()
+
+    return {
+        "has_comparison": True,
+        "comp_label": comp_label,
+        "cur_listens": cur_listens,
+        "prev_listens": prev_listens,
+        "listens_pct": listens_pct,
+        "cur_songs": cur_songs,
+        "prev_songs": prev_songs,
+        "songs_pct": songs_pct,
+        "top_rising": top_rising
+    }
+
 def get_top_artists(range_val='all', limit=15):
     """Obtiene los artistas más reproducidos en el periodo"""
     where_clause = ""
@@ -55,6 +141,37 @@ def get_top_artists(range_val='all', limit=15):
         JOIN escuchas e ON c.spotify_id = e.spotify_id_cancion
         WHERE 1=1 {where_clause}
         GROUP BY a.spotify_id, a.nombre
+        ORDER BY total_reproducciones DESC
+        LIMIT %s;
+    """, (limit,))
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows
+
+def get_top_songs(range_val='all', limit=15):
+    """Obtiene las canciones más reproducidas en el periodo"""
+    where_clause = ""
+    if range_val and range_val != 'all':
+        interval = INTERVAL_MAP.get(range_val, '1 YEAR')
+        where_clause = f"AND e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {interval})"
+
+    conn = get_stats_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(f"""
+        SELECT 
+            c.spotify_id,
+            c.nombre,
+            c.album_nombre,
+            c.imagen_url,
+            GROUP_CONCAT(DISTINCT a.nombre SEPARATOR ', ') as artista,
+            COUNT(e.id) as total_reproducciones
+        FROM canciones c
+        JOIN escuchas e ON c.spotify_id = e.spotify_id_cancion
+        LEFT JOIN cancion_autor ca ON c.spotify_id = ca.cancion_id
+        LEFT JOIN autores a ON ca.autor_id = a.spotify_id
+        WHERE 1=1 {where_clause}
+        GROUP BY c.spotify_id, c.nombre, c.album_nombre, c.imagen_url
         ORDER BY total_reproducciones DESC
         LIMIT %s;
     """, (limit,))

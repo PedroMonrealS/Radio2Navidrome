@@ -46,3 +46,8 @@ FLASK_PORT = int(os.environ.get("FLASK_PORT", 5000))
 
 # ================= UMBRALES =================
 FUZZY_THRESHOLD = int(os.environ.get("FUZZY_THRESHOLD", 80))
+
+# ================= TELEGRAM NOTIFICACIONES =================
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "-1003998145275")
+TELEGRAM_THREAD_ID = os.environ.get("TELEGRAM_THREAD_ID", "24788")

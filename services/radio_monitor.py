@@ -13,6 +13,8 @@ from services.auditor import (
     sync_aceptadas_to_libreria,
     sync_playlist_faltantes
 )
+from services.smart_playlists import sync_all_smart_playlists
+from services.radio_stats_service import record_radio_emissions_batch
 
 def radio_monitor_loop():
     """Bucle en segundo plano que monitoriza las emisoras de radio y sincroniza con Navidrome"""
@@ -36,10 +38,18 @@ def radio_monitor_loop():
                                     all_songs.append({
                                         'title': item.get('name'),
                                         'artist': item.get('artistName'),
-                                        'station': item.get('serviceName', 'Desconocida')
+                                        'station': item.get('serviceName', 'Desconocida'),
+                                        'start_time': item.get('startTime')
                                     })
                 except Exception:
                     pass
+
+            # Registrar emisiones para el estudio de rotación de radio
+            if all_songs:
+                try:
+                    record_radio_emissions_batch(all_songs)
+                except Exception as ex_em:
+                    print(f"Error guardando emisiones de radio: {ex_em}")
 
             # 2. Playlist actual en Navidrome
             playlist_id = get_target_playlist_id()
@@ -81,6 +91,10 @@ def radio_monitor_loop():
             if sync_counter >= 15:
                 sync_aceptadas_to_libreria()
                 sync_playlist_faltantes()
+                try:
+                    sync_all_smart_playlists()
+                except Exception as ex:
+                    print(f"Error sincronizando smart playlists en background: {ex}")
                 sync_counter = 0
 
         except Exception as e:

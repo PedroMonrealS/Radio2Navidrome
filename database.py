@@ -48,6 +48,21 @@ def init_db():
                 UNIQUE KEY unique_song (artist, title)
             )
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS radio_emisiones (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                station VARCHAR(100) NOT NULL,
+                artist VARCHAR(255) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                start_time VARCHAR(50) DEFAULT NULL,
+                emitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_emission (station, artist, title, start_time),
+                INDEX idx_station_emitted (station, emitted_at),
+                INDEX idx_artist_title (artist, title),
+                INDEX idx_emitted (emitted_at)
+            )
+        """)
         
         # Migraciones dinámicas seguras
         columns_libreria = [
