@@ -57,18 +57,21 @@ def format_interval(span_minutes, count):
 
 def get_radio_rotation_stats(period='today', station='todas'):
     """Obtiene el informe completo de rotación, repetición y bucle de la radio"""
-    interval_map = {
-        'today': '1 DAY',
-        'week': '7 DAY',
-        'month': '30 DAY',
-        'all': None
-    }
-    interval = interval_map.get(period, '1 DAY')
-
     where_parts = []
     params = []
-    if interval:
-        where_parts.append(f"emitted_at >= DATE_SUB(NOW(), INTERVAL {interval})")
+    time_condition = ""
+    if period == 'today':
+        time_condition = "emitted_at >= CURDATE()"
+    elif period and period != 'all':
+        interval_map = {
+            'week': '7 DAY',
+            'month': '30 DAY'
+        }
+        interval = interval_map.get(period, '7 DAY')
+        time_condition = f"emitted_at >= DATE_SUB(NOW(), INTERVAL {interval})"
+
+    if time_condition:
+        where_parts.append(time_condition)
     if station and station != 'todas':
         where_parts.append("station = %s")
         params.append(station)
@@ -135,7 +138,7 @@ def get_radio_rotation_stats(period='today', station='todas'):
     top_artistas = cursor.fetchall()
 
     # 4. Comparativa por Emisoras (sin filtro de estación específica)
-    where_time = f"WHERE emitted_at >= DATE_SUB(NOW(), INTERVAL {interval})" if interval else ""
+    where_time = f"WHERE {time_condition}" if time_condition else ""
     cursor.execute(f"""
         SELECT 
             station,

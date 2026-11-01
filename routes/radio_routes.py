@@ -617,15 +617,28 @@ def api_remove_all_duplicates():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-@radio_bp.route('/api/telegram/test', methods=['POST'])
+@radio_bp.route('/api/telegram/test', methods=['POST', 'GET'])
 def api_telegram_test():
     from services.telegram_service import send_telegram_notification
     success, msg = send_telegram_notification(
-        "Test de Notificación NaviRadio",
-        "✅ ¡El bot de Telegram está correctamente conectado con tu grupo y tema!",
+        "Prueba de Notificación NaviRadio",
+        "🎉 ¡El bot de Telegram está correctamente conectado con tu grupo y tema!",
         emoji="🤖"
     )
-    return jsonify({"success": success, "message": msg})
+    if request.is_json or request.args.get('format') == 'json' or request.method == 'POST':
+        return jsonify({"success": success, "message": msg})
+    return f"""
+    <html>
+    <head><title>Prueba de Telegram</title><meta charset='utf-8'></head>
+    <body style="font-family: sans-serif; background: #0a0f1d; color: white; padding: 40px; text-align: center;">
+        <div style="max-width: 500px; margin: 0 auto; background: #182238; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 30px;">
+            <h2 style="color: {'#22c55e' if success else '#ef4444'};">{'✅ ¡Éxito!' if success else '⚠️ Aviso de Telegram'}</h2>
+            <p style="font-size: 1.1em; line-height: 1.6;">{msg}</p>
+            <a href="/?tab=descargar" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #38bdf8; color: #0a0f1d; font-weight: bold; text-decoration: none; border-radius: 8px;">⬅ Volver al Panel</a>
+        </div>
+    </body>
+    </html>
+    """
 
 @radio_bp.route('/api/playlists/sync_smart_playlists', methods=['POST'])
 def api_sync_smart_playlists():

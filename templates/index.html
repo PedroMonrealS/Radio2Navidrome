@@ -12,7 +12,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <!-- Bibliotecas locales para exportación de historias y GIF -->
-    <script src="/static/js/html2canvas.min.js">
+    <script src="/static/js/html2canvas.min.js"></script>
+    <script>
         // ================= PEDIR VERSIÓN ORIGINAL LIMPIA =================
         async function acceptOriginalSong(songId, btn) {
             if (btn) btn.disabled = true;
@@ -74,6 +75,30 @@
             }
         });
 
+    
+        async function testTelegramBot() {
+            const btn = document.getElementById('btnTestTelegram');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Enviando...';
+            }
+            try {
+                const res = await fetch('/api/telegram/test', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert('OK: ' + data.message);
+                } else {
+                    alert('Aviso de Telegram: ' + data.message);
+                }
+            } catch(e) {
+                alert('Error al conectar con el servidor.');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = '🤖 Probar Telegram';
+                }
+            }
+        }
     </script>
     <script src="/static/js/gifshot.min.js"></script>
     <!-- Chart.js para estadísticas -->
@@ -1792,6 +1817,9 @@
                             </a>
                             <button id="btnQbitRefresh" onclick="forceQbitRefresh()" class="btn btn-secondary" style="padding: 10px 18px; font-weight: 700;" title="Fuerza inicio (ignora cola) y recomunica rastreadores en qBittorrent">
                                 ⚡ Forzar qBittorrent
+                            </button>
+                            <button id="btnTestTelegram" onclick="testTelegramBot()" class="btn" style="background: #229ed9; color: white; padding: 10px 18px; font-weight: 700; border: none; cursor: pointer;" title="Envía un mensaje de prueba al hilo del bot de Telegram">
+                                🤖 Probar Telegram
                             </button>
                         </div>
                     </div>

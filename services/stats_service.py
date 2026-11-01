@@ -1,19 +1,31 @@
 import urllib.parse
 from database import get_stats_db_connection
 
-INTERVAL_MAP = {
-    'today': '1 DAY',
-    'week': '7 DAY',
-    'month': '1 MONTH',
-    'year': '1 YEAR'
-}
+def get_stats_date_filter(range_val, prefix="e."):
+    """Retorna la condición SQL para filtrar por fecha según el rango:
+    - 'today': Desde las 00:00:00 del día actual (CURDATE())
+    - 'week': Últimos 7 días
+    - 'month': Último mes
+    - 'year': Último año
+    - 'all': Histórico completo sin filtro
+    """
+    if not range_val or range_val == 'all':
+        return ""
+    field = f"{prefix}reproducido_en"
+    if range_val == 'today':
+        return f"{field} >= CURDATE()"
+    interval_map = {
+        'week': '7 DAY',
+        'month': '1 MONTH',
+        'year': '1 YEAR'
+    }
+    interval = interval_map.get(range_val, '1 YEAR')
+    return f"{field} >= DATE_SUB(NOW(), INTERVAL {interval})"
 
 def get_stats(range_val='today'):
     """Obtiene el resumen de conteos de canciones, artistas y escuchas según el rango"""
-    where_clause = ""
-    if range_val and range_val != 'all':
-        interval = INTERVAL_MAP.get(range_val, '1 DAY')
-        where_clause = f"WHERE e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {interval})"
+    cond = get_stats_date_filter(range_val, prefix="e.")
+    where_clause = f"WHERE {cond}" if cond else ""
 
     conn = get_stats_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -40,26 +52,33 @@ def get_period_comparison(range_val='week'):
     if range_val not in ['today', 'week', 'month', 'year']:
         return {"has_comparison": False}
 
-    intervals = {
-        'today': (1, 2, 'ayer'),
-        'week': (7, 14, 'la semana anterior'),
-        'month': (30, 60, 'el mes anterior'),
-        'year': (365, 730, 'el año anterior')
-    }
-
-    cur_days, prev_days, comp_label = intervals[range_val]
+    if range_val == 'today':
+        comp_label = 'ayer'
+        cur_condition = "e.reproducido_en >= CURDATE()"
+        prev_condition = "e.reproducido_en >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND e.reproducido_en < CURDATE()"
+        outer_condition = "e.reproducido_en >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)"
+    else:
+        intervals = {
+            'week': (7, 14, 'la semana anterior'),
+            'month': (30, 60, 'el mes anterior'),
+            'year': (365, 730, 'el año anterior')
+        }
+        cur_days, prev_days, comp_label = intervals.get(range_val, (7, 14, 'el periodo anterior'))
+        cur_condition = f"e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {cur_days} DAY)"
+        prev_condition = f"e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY) AND e.reproducido_en < DATE_SUB(NOW(), INTERVAL {cur_days} DAY)"
+        outer_condition = f"e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY)"
 
     conn = get_stats_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     query = f"""
         SELECT 
-            COUNT(CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN 1 END) as cur_listens,
-            COUNT(CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY) AND e.reproducido_en < DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN 1 END) as prev_listens,
-            COUNT(DISTINCT CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN e.spotify_id_cancion END) as cur_songs,
-            COUNT(DISTINCT CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY) AND e.reproducido_en < DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN e.spotify_id_cancion END) as prev_songs
+            COUNT(CASE WHEN {cur_condition} THEN 1 END) as cur_listens,
+            COUNT(CASE WHEN {prev_condition} THEN 1 END) as prev_listens,
+            COUNT(DISTINCT CASE WHEN {cur_condition} THEN e.spotify_id_cancion END) as cur_songs,
+            COUNT(DISTINCT CASE WHEN {prev_condition} THEN e.spotify_id_cancion END) as prev_songs
         FROM escuchas e
-        WHERE e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY);
+        WHERE {outer_condition};
     """
     cursor.execute(query)
     row = cursor.fetchone() or {}
@@ -83,12 +102,12 @@ def get_period_comparison(range_val='week'):
         SELECT * FROM (
             SELECT 
                 a.nombre,
-                COUNT(CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN 1 END) as cur_count,
-                COUNT(CASE WHEN e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY) AND e.reproducido_en < DATE_SUB(NOW(), INTERVAL {cur_days} DAY) THEN 1 END) as prev_count
+                COUNT(CASE WHEN {cur_condition} THEN 1 END) as cur_count,
+                COUNT(CASE WHEN {prev_condition} THEN 1 END) as prev_count
             FROM escuchas e
             JOIN cancion_autor ca ON e.spotify_id_cancion = ca.cancion_id
             JOIN autores a ON ca.autor_id = a.spotify_id
-            WHERE e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {prev_days} DAY)
+            WHERE {outer_condition}
             GROUP BY a.spotify_id, a.nombre
         ) sub
         WHERE cur_count > prev_count
@@ -123,10 +142,8 @@ def get_period_comparison(range_val='week'):
 
 def get_top_artists(range_val='all', limit=15):
     """Obtiene los artistas más reproducidos en el periodo"""
-    where_clause = ""
-    if range_val and range_val != 'all':
-        interval = INTERVAL_MAP.get(range_val, '1 YEAR')
-        where_clause = f"AND e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {interval})"
+    cond = get_stats_date_filter(range_val, prefix="e.")
+    where_clause = f"AND {cond}" if cond else ""
 
     conn = get_stats_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -151,10 +168,8 @@ def get_top_artists(range_val='all', limit=15):
 
 def get_top_songs(range_val='all', limit=15):
     """Obtiene las canciones más reproducidas en el periodo"""
-    where_clause = ""
-    if range_val and range_val != 'all':
-        interval = INTERVAL_MAP.get(range_val, '1 YEAR')
-        where_clause = f"AND e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {interval})"
+    cond = get_stats_date_filter(range_val, prefix="e.")
+    where_clause = f"AND {cond}" if cond else ""
 
     conn = get_stats_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -182,10 +197,8 @@ def get_top_songs(range_val='all', limit=15):
 
 def get_top_albums(range_val='all', limit=10):
     """Obtiene los álbumes más reproducidos en el periodo"""
-    where_clause = ""
-    if range_val and range_val != 'all':
-        interval = INTERVAL_MAP.get(range_val, '1 YEAR')
-        where_clause = f"AND e.reproducido_en >= DATE_SUB(NOW(), INTERVAL {interval})"
+    cond = get_stats_date_filter(range_val, prefix="e.")
+    where_clause = f"AND {cond}" if cond else ""
 
     conn = get_stats_db_connection()
     cursor = conn.cursor(dictionary=True)
