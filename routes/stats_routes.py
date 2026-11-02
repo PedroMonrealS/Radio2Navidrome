@@ -115,8 +115,9 @@ def api_proxy_image():
 def api_radio_rotation_stats():
     period = request.args.get('period', 'today')
     station = request.args.get('station', 'todas')
+    exclude_promos = request.args.get('exclude_promos', 'true').lower() in ['true', '1', 'yes']
     try:
-        data = get_radio_rotation_stats(period, station)
+        data = get_radio_rotation_stats(period, station, exclude_promos=exclude_promos)
         return jsonify(data)
     except Exception as e:
         print(f"Error api_radio_rotation_stats: {e}")

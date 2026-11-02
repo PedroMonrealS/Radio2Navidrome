@@ -2,7 +2,7 @@ import time
 import requests
 from config import RADIO_API_URLS
 from database import get_db_connection
-from services.utils import get_itunes_preview
+from services.utils import get_itunes_preview, is_radio_promo_or_jingle
 from services.navidrome import (
     get_target_playlist_id,
     get_playlist_track_ids,
@@ -57,6 +57,10 @@ def radio_monitor_loop():
 
             # 3. Procesar canciones encontradas
             for song in all_songs:
+                # Omitir jingles, cuñas y noticias para no ensuciar la bandeja de descubrimientos
+                if is_radio_promo_or_jingle(song['title'], song['artist'], song['station']):
+                    continue
+
                 status = check_db_status(song['title'], song['artist'])
                 if status:
                     continue # Ya procesada previamente

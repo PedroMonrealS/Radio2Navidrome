@@ -41,3 +41,37 @@ def get_itunes_preview(title, artist):
     except Exception:
         pass
     return None
+
+def is_radio_promo_or_jingle(title, artist, station=''):
+    """Detecta si un evento emitido en radio es una promo, cuña publicitaria, jingle o noticias"""
+    t = (title or '').lower().strip()
+    a = (artist or '').lower().strip()
+    s = (station or '').lower().strip()
+    
+    # 1. Palabras clave explícitas de cuñas y noticias
+    keywords = [
+        'noticia', 'variedad musical', 'la mejor variedad', 'megakiss',
+        'boletin', 'boletín', 'informativo', 'indi inicio', 'indi fin',
+        'jingle', 'publicidad', 'patrocinio', 'sintonía', 'sintonia',
+        'despertador', 'buenos dias', 'buenos días'
+    ]
+    for kw in keywords:
+        if kw in t or kw in a:
+            return True
+            
+    # 2. Nombre de la emisora como artista o título
+    station_names = ['cadena 100', 'kiss fm', 'los40', 'los 40', 'cadena dial', 'dial', 'cope', 'ser', 'onda cero']
+    if s:
+        station_names.append(s)
+        
+    for sn in station_names:
+        if a == sn or t == sn:
+            return True
+            
+    # 3. Presentadores de bloques informativos de radio
+    if a.startswith('con ') and ('noticia' in t or 'kiss' in t or 'cadena' in t or 'los40' in t):
+        return True
+    if t.startswith('con ') and ('noticia' in a or 'kiss' in a or 'cadena' in a or 'los40' in a):
+        return True
+        
+    return False

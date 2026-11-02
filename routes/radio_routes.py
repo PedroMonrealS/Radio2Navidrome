@@ -1,3 +1,5 @@
+import time
+import requests
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify
 from database import get_db_connection
 from services.utils import get_itunes_preview
@@ -10,7 +12,10 @@ from services.navidrome import (
     star_song_in_navidrome,
     get_playlist_duplicates,
     remove_song_duplicates,
-    remove_all_duplicates_from_playlist
+    remove_all_duplicates_from_playlist,
+    get_navidrome_params,
+    NAVIDROME_URL,
+    invalidate_duplicates_cache
 )
 from services.lidarr import (
     request_lidarr_song,
@@ -397,6 +402,58 @@ def add_to_navidrome_playlist_route(db_id):
         
     if request.args.get('ajax'):
         return ajax_response(success)
+    return redirect(url_for('.index', tab='playlist'))
+
+@radio_bp.route('/add_all_missing_to_playlist')
+def add_all_missing_to_playlist():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, title, artist, navidrome_id FROM canciones_libreria WHERE en_playlist = FALSE AND ignorar_playlist = FALSE")
+        rows = cursor.fetchall()
+        
+        pid = get_target_playlist_id()
+        if not pid or not rows:
+            conn.close()
+            return redirect(url_for('.index', tab='playlist'))
+            
+        current_tracks = get_playlist_track_ids(pid)
+        ids_to_add = []
+        db_ids_to_update = []
+        
+        for r in rows:
+            nid = r.get('navidrome_id')
+            if not nid:
+                in_nav, nid = search_in_navidrome(r['title'], r['artist'])
+                if nid:
+                    cursor.execute("UPDATE canciones_libreria SET navidrome_id = %s WHERE id = %s", (nid, r['id']))
+            if nid:
+                if nid not in current_tracks:
+                    ids_to_add.append(nid)
+                    current_tracks.add(nid)
+                db_ids_to_update.append(r['id'])
+                
+        # Añadir por lotes a Navidrome
+        if ids_to_add:
+            chunk_size = 50
+            for i in range(0, len(ids_to_add), chunk_size):
+                chunk = ids_to_add[i:i + chunk_size]
+                post_data = list(get_navidrome_params({'playlistId': pid}).items())
+                for nid in chunk:
+                    post_data.append(('songIdToAdd', nid))
+                requests.post(f"{NAVIDROME_URL}/rest/updatePlaylist.view", data=post_data, timeout=15)
+                time.sleep(0.05)
+                
+        if db_ids_to_update:
+            format_strings = ','.join(['%s'] * len(db_ids_to_update))
+            cursor.execute(f"UPDATE canciones_libreria SET en_playlist = TRUE WHERE id IN ({format_strings})", tuple(db_ids_to_update))
+            conn.commit()
+            
+        conn.close()
+        invalidate_duplicates_cache()
+    except Exception as e:
+        print(f"Error add_all_missing_to_playlist: {e}")
+        
     return redirect(url_for('.index', tab='playlist'))
 
 @radio_bp.route('/run_audit')

@@ -55,7 +55,24 @@ def format_interval(span_minutes, count):
         return f"Cada ~{h}h {m}m" if m > 0 else f"Cada ~{h}h"
     return f"Cada ~{m}m"
 
-def get_radio_rotation_stats(period='today', station='todas'):
+# Cláusula SQL para identificar jingles, cuñas de autopromoción y noticias
+PROMO_SQL_CONDITION = """(
+    LOWER(artist) LIKE '%noticia%' OR LOWER(title) LIKE '%noticia%'
+    OR LOWER(artist) LIKE '%variedad musical%' OR LOWER(title) LIKE '%variedad musical%'
+    OR LOWER(artist) LIKE '%la mejor variedad%' OR LOWER(title) LIKE '%la mejor variedad%'
+    OR LOWER(artist) LIKE '%megakiss%' OR LOWER(title) LIKE '%megakiss%'
+    OR LOWER(artist) LIKE '%boletin%' OR LOWER(title) LIKE '%boletin%'
+    OR LOWER(artist) LIKE '%boletín%' OR LOWER(title) LIKE '%boletín%'
+    OR LOWER(artist) LIKE '%informativo%' OR LOWER(title) LIKE '%informativo%'
+    OR LOWER(artist) LIKE '%indi inicio%' OR LOWER(title) LIKE '%indi inicio%'
+    OR LOWER(artist) LIKE '%indi fin%' OR LOWER(title) LIKE '%indi fin%'
+    OR LOWER(artist) LIKE '%jingle%' OR LOWER(title) LIKE '%jingle%'
+    OR (LOWER(TRIM(artist)) = LOWER(TRIM(station)) OR LOWER(TRIM(title)) = LOWER(TRIM(station)))
+    OR (LOWER(TRIM(artist)) IN ('cadena 100', 'kiss fm', 'los40', 'los 40', 'cadena dial', 'dial'))
+    OR (LOWER(TRIM(title)) IN ('cadena 100', 'kiss fm', 'los40', 'los 40', 'cadena dial', 'dial'))
+)"""
+
+def get_radio_rotation_stats(period='today', station='todas', exclude_promos=True):
     """Obtiene el informe completo de rotación, repetición y bucle de la radio"""
     where_parts = []
     params = []
@@ -75,6 +92,8 @@ def get_radio_rotation_stats(period='today', station='todas'):
     if station and station != 'todas':
         where_parts.append("station = %s")
         params.append(station)
+    if exclude_promos:
+        where_parts.append(f"NOT {PROMO_SQL_CONDITION}")
 
     where_clause = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
@@ -138,7 +157,12 @@ def get_radio_rotation_stats(period='today', station='todas'):
     top_artistas = cursor.fetchall()
 
     # 4. Comparativa por Emisoras (sin filtro de estación específica)
-    where_time = f"WHERE {time_condition}" if time_condition else ""
+    where_time_parts = []
+    if time_condition:
+        where_time_parts.append(time_condition)
+    if exclude_promos:
+        where_time_parts.append(f"NOT {PROMO_SQL_CONDITION}")
+    where_time = ("WHERE " + " AND ".join(where_time_parts)) if where_time_parts else ""
     cursor.execute(f"""
         SELECT 
             station,
@@ -165,6 +189,7 @@ def get_radio_rotation_stats(period='today', station='todas'):
     return {
         "period": period,
         "selected_station": station,
+        "exclude_promos": exclude_promos,
         "total_emisiones": total_emisiones,
         "canciones_unicas": canciones_unicas,
         "indice_repeticion": indice_repeticion,

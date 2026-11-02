@@ -260,42 +260,49 @@ def remove_song_duplicates(artist, title):
         return {'success': False, 'error': str(e)}
 
 def remove_all_duplicates_from_playlist():
-    """Elimina TODAS las copias redundantes de la playlist a la vez en lotes descendentes"""
+    """Elimina TODAS las copias redundantes de la playlist de forma iterativa y segura sin desfasar índices"""
     pid = get_target_playlist_id()
     if not pid:
         return {'success': False, 'error': 'No se encontró la playlist objetivo'}
         
     try:
-        res = requests.get(f"{NAVIDROME_URL}/rest/getPlaylist.view", params=get_navidrome_params({'id': pid}), timeout=15)
-        entries = res.json().get('subsonic-response', {}).get('playlist', {}).get('entry', [])
+        total_removed = 0
+        max_iterations = 50
+        iteration = 0
         
-        seen = set()
-        indices_to_remove = []
-        for idx, track in enumerate(entries):
-            c_art = clean_text(track.get('artist', ''))
-            c_tit = clean_text(track.get('title', ''))
-            key = (c_art, c_tit) if c_art and c_tit else track.get('id')
-            if key in seen:
-                indices_to_remove.append(idx)
-            else:
-                seen.add(key)
-                
-        if not indices_to_remove:
-            invalidate_duplicates_cache()
-            return {'success': True, 'removed_count': 0}
+        while iteration < max_iterations:
+            iteration += 1
+            res = requests.get(f"{NAVIDROME_URL}/rest/getPlaylist.view", params=get_navidrome_params({'id': pid}), timeout=15)
+            entries = res.json().get('subsonic-response', {}).get('playlist', {}).get('entry', [])
             
-        indices_descending = sorted(indices_to_remove, reverse=True)
-        chunk_size = 50
-        for i in range(0, len(indices_descending), chunk_size):
-            chunk = indices_descending[i:i + chunk_size]
+            seen = set()
+            indices_to_remove = []
+            for idx, track in enumerate(entries):
+                c_art = clean_text(track.get('artist', ''))
+                c_tit = clean_text(track.get('title', ''))
+                key = (c_art, c_tit) if c_art and c_tit else track.get('id')
+                if key in seen:
+                    indices_to_remove.append(idx)
+                else:
+                    seen.add(key)
+                    
+            if not indices_to_remove:
+                break
+                
+            # Tomamos un lote en orden estrictamente descendente sobre la lista fresca actual
+            batch = sorted(indices_to_remove, reverse=True)[:30]
             del_data = list(get_navidrome_params({'playlistId': pid}).items())
-            for idx in chunk:
+            for idx in batch:
                 del_data.append(('songIndexToRemove', idx))
-            requests.post(f"{NAVIDROME_URL}/rest/updatePlaylist.view", data=del_data, timeout=15)
-            time.sleep(0.04)
+            res_del = requests.post(f"{NAVIDROME_URL}/rest/updatePlaylist.view", data=del_data, timeout=15)
+            if res_del.status_code == 200:
+                total_removed += len(batch)
+            else:
+                break
+            time.sleep(0.05)
             
         invalidate_duplicates_cache()
-        return {'success': True, 'removed_count': len(indices_to_remove)}
+        return {'success': True, 'removed_count': total_removed}
     except Exception as e:
         print(f"Error remove_all_duplicates_from_playlist: {e}")
         return {'success': False, 'error': str(e)}
